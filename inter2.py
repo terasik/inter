@@ -2,6 +2,7 @@
 import sys
 import os
 import json
+import re
 import cmd2
 import jmespath
 
@@ -19,7 +20,15 @@ class JsonWalk:
   def js(self, o):
     self._js=o
     self.cl=self.build_completion_list()
-    print(self.cl)
+    #print(self.cl)
+
+  def _prepare_search_string(self, s):
+    """ replace ':' with '|'
+    make quotes bei keys
+    """
+    s=re.sub(r"(\[\d+\])|:", r"|\1", s)
+    s="|".join([f'"{x}"' if not x.startswith('[') else x for x in s.split('|') if x])
+    return s
 
   def build_completion_list(self):
     """ bildet completion liste vom gesamten js objekt 
@@ -29,16 +38,35 @@ class JsonWalk:
     return self._rec_compl_build(self._js, "", [])
 
   def get_value(self, s=""):
-    """ liefert objekt anhand des suchstrings 
-    re.sub(r"(\[\d+\])|:", r"|\1", "a[2]:r:c[2]:t")
-    [f'"{x}"' if not x.startswith('[') else x for x in 'a|[2]|r|c|[2]|[10]|t'.split('|') ]
-
+    """ 
+    liefert objekt anhand des suchstrings 
     """
     if not s:
       return self._js
-    s=re.sub(r"(\[\d+\])|:", r"|\1", s)
-    s="|".join([f'"{x}"' if not x.startswith('[') else x for x in s.split('|') ])
-    return s
+    self._get_object_ref(s)
+    s=self._prepare_search_string(s)
+    return jmespath.search(s, self._js)
+
+  def _get_object_ref(self, s=""):
+    """ return reference to part of js 
+    described with s
+    """
+    if not s:
+      return self._js
+    o=self._js
+    s=self._prepare_search_string(s)
+    for e in s.split('|'):
+      l=re.match(r"\[(\d+)\]", e)
+      d=re.match(r"\"(.+?)\"", e)
+      print("l: ", l)
+      print("d: ", d)
+      if l:
+        idx=int(l.group(1))
+        o=o[idx]
+      else:
+        o=o[d.group(1)]
+    print("o: ", o)
+    
     
   def _rec_compl_build(self, o, s="", l=[]):
     """
@@ -82,7 +110,16 @@ class JsonWalk:
     
 
 class App(cmd2.Cmd):
-  """A simple cmd2 application."""
+  """ handle json/yaml interactive
+  cmd list:
+
+    open  <file>              -> open json/yaml file
+    print <e> .. <e>          -> print values of elements
+    update <e> -k <key> -v <value>  -> combine element with {key: value}
+    set <e> -v <value>           -> set value
+    
+
+  """
 
   def __init__(self):
     super().__init__()
@@ -115,35 +152,27 @@ class App(cmd2.Cmd):
   @cmd2.with_argument_list
   def do_print(self, s):
     """ zeige geladenes json """
-    self.poutput("print compl list: %s" % self.jsw.cl)
+    #self.poutput("print compl list: %s" % self.jsw.cl)
     if self.jsw:
-      self.poutput(JsonWalk.dumps(self.jsw.js))
+      if not s:
+        self.poutput(JsonWalk.dumps(self.jsw.js))
+      else:
+        for e in s:
+          self.poutput("arg: %s erg: %s" % (e, self.jsw.get_value(e)))
     else:
-      pass
+      self.pwarning("bitte erstmal eine datei öffnen")
 
   def complete_print(self, text, line, begidx, endidx):
     """ completion für print """
-    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.jsw.cl, delimiter=":")
+    if self.jsw:
+      cl=self.jsw.cl
+    else:
+      cl=[]
+    return self.delimiter_complete(text, line, begidx, endidx, match_against=cl, delimiter=":")
 
   def do_pager_jsw(self, s):
     """ zeige geladenes json """
     self.poutput(JsonWalk.dumps(self.jsw.js), paged=True)
-
-  ########### ctest fuktionen ################# 
-  def do_ctest(self, s):
-    """ completion test """
-    self.poutput("completion test: %s" % s)
-
-  def _complete_ctest(self, text, line, begidx, endidx):
-    """ completion für ctest """
-    return self.basic_complete(text, line, begidx, endidx, match_against=["gfr", "jhgvfd", "poki uz"])
-
-  def complete_ctest(self, text, line, begidx, endidx):
-    """ completion für ctest """
-    #mal=['a[0]', 'a[1]', 'b', 'c.o1', 'c.o2', 'c.o3[0]', 'c.o3[1].r', 'c.o3[2]', 'd', 'e[0]', 'e[1].lo2', 'f.']
-    mal=["aa.bbb.cc", "z\.t.bab", "zh.re"]
-    return self.delimiter_complete(text, line, begidx, endidx, match_against=mal, delimiter=".")
-
 
 
 if __name__ == '__main__':
