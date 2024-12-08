@@ -58,14 +58,14 @@ class JsonWalk:
     for e in s.split('|'):
       l=re.match(r"\[(\d+)\]", e)
       d=re.match(r"\"(.+?)\"", e)
-      print("l: ", l)
-      print("d: ", d)
+      #print("l: ", l)
+      #print("d: ", d)
       if l:
         idx=int(l.group(1))
         o=o[idx]
       else:
         o=o[d.group(1)]
-    print("o: ", o)
+    #print("o: ", o)
     
     
   def _rec_compl_build(self, o, s="", l=[]):
@@ -108,17 +108,21 @@ class JsonWalk:
     """ gibt formatierten json string zurück """
     return json.dumps(o, indent=4)    
     
+class Cl:
+  cl=[]
 
 class App(cmd2.Cmd):
+
   """ handle json/yaml interactive
   cmd list:
 
-    open  <file>              -> open json/yaml file
-    print <e> .. <e>          -> print values of elements
+    open  <file>                    -> open json/yaml file
+    print <e> .. <e>                -> print values of elements
     update <e> -k <key> -v <value>  -> combine element with {key: value}
-    set <e> -v <value>           -> set value
+    set <e> -v <value>              -> set value
+    new <file>                      -> new file
+                                        if file exists 'open' will be used
     
-
   """
 
   def __init__(self):
@@ -127,7 +131,8 @@ class App(cmd2.Cmd):
     #self.complete_open=self.path_complete
     self.jsw=None
 
-  #def do_show
+  def ch_pr(self):
+    return Cl.cl
 
   ############# open ##########################
   def do_open(self, s):
@@ -142,6 +147,7 @@ class App(cmd2.Cmd):
       self.perror("laden der json nicht möglich %s:" % _exc)
     else:
       self.jsw=JsonWalk(js)
+      Cl.cl=self.jsw.cl
       self.psuccess("json geladen")
       
   def complete_open(self, text, line, begidx, endidx):
@@ -158,23 +164,28 @@ class App(cmd2.Cmd):
         self.poutput(JsonWalk.dumps(self.jsw.js))
       else:
         for e in s:
-          self.poutput("arg: %s erg: %s" % (e, self.jsw.get_value(e)))
+          self.poutput("%s: %s" % (e, self.jsw.get_value(e)))
     else:
       self.pwarning("bitte erstmal eine datei öffnen")
 
   def complete_print(self, text, line, begidx, endidx):
     """ completion für print """
-    if self.jsw:
-      cl=self.jsw.cl
-    else:
-      cl=[]
-    return self.delimiter_complete(text, line, begidx, endidx, match_against=cl, delimiter=":")
+    return self.delimiter_complete(text, line, begidx, endidx, match_against=Cl.cl, delimiter=":")
 
-  def do_pager_jsw(self, s):
-    """ zeige geladenes json """
-    self.poutput(JsonWalk.dumps(self.jsw.js), paged=True)
+  ###################### set ########################
+  set_parser=cmd2.Cmd2ArgumentParser()
+  set_parser.add_argument('element', help='apply value of json element', choices_provider=ch_pr)
+  set_parser.add_argument('-v', '--value', nargs=1, help='value of json element')
+
+  
+  @cmd2.with_argparser(set_parser)
+  def do_apply(self, args):
+    """ apply value to json element """
+    print("Cl.cl: %s" % Cl.cl)
+    self.poutput("set args: %s" % args)
 
 
+  
 if __name__ == '__main__':
   c = App()
   sys.exit(c.cmdloop())
