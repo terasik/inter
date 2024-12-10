@@ -3,6 +3,7 @@ import sys
 import os
 import json
 import re
+from copy import deepcopy
 import cmd2
 import jmespath
 
@@ -43,34 +44,50 @@ class JsonWalk:
     """
     if not s:
       return self._js
-    self._get_object_ref(s)
     s=self._prepare_search_string(s)
     return jmespath.search(s, self._js)
 
-  def _get_object_ref(self, s=""):
+  def _convert_to_json(self, v):
+    """ try to convert value to json
+    if it doesn't work return 'v'"""
+    try:
+      js=json.loads(v)
+    except json.JSONDecodeError:
+      return v
+    return js
+
+  def _handle_object_ref(self, s=None, set_val=False, v=None):
     """ return reference to part of js 
     described with s
     """
     if not s:
       return self._js
+    if set_val:
+      v=self._convert_to_json(v)
     o=self._js
     s=self._prepare_search_string(s)
-    for e in s.split('|'):
+    s_split=s.split('|')
+    for c,e in enumerate(s_split):
       l=re.match(r"\[(\d+)\]", e)
       d=re.match(r"\"(.+?)\"", e)
-      #print("l: ", l)
-      #print("d: ", d)
       if l:
-        idx=int(l.group(1))
-        o=o[idx]
+        idx_or_key=int(l.group(1))
       else:
-        o=o[d.group(1)]
-    #print("o: ", o)
+        idx_or_key=d.group(1)
+      if set_val and c==(len(s_split)-1):
+        o[idx_or_key]=v
+        self.build_completion_list()
+      o=o[idx_or_key]
+    return o
+
+  def set_value(self, s="", v=None):
+    """ set value """
+    self._handle_object_ref(s, True, v)
     
     
   def _rec_compl_build(self, o, s="", l=[]):
     """
-    recursives bilden der completion liste 
+    recursiv build of completion list
     """
     if type(o)==list:
       if not o:
@@ -108,8 +125,6 @@ class JsonWalk:
     """ gibt formatierten json string zurück """
     return json.dumps(o, indent=4)    
     
-class Cl:
-  cl=[]
 
 class App(cmd2.Cmd):
 
@@ -130,9 +145,10 @@ class App(cmd2.Cmd):
     self.prompt="> "
     #self.complete_open=self.path_complete
     self.jsw=None
+    self.jcl=[]
 
-  def ch_pr(self):
-    return Cl.cl
+  def json_choice_provider(self):
+    return self.jcl
 
   ############# open ##########################
   def do_open(self, s):
@@ -147,7 +163,7 @@ class App(cmd2.Cmd):
       self.perror("laden der json nicht möglich %s:" % _exc)
     else:
       self.jsw=JsonWalk(js)
-      Cl.cl=self.jsw.cl
+      self.jcl=self.jsw.cl
       self.psuccess("json geladen")
       
   def complete_open(self, text, line, begidx, endidx):
@@ -164,25 +180,27 @@ class App(cmd2.Cmd):
         self.poutput(JsonWalk.dumps(self.jsw.js))
       else:
         for e in s:
-          self.poutput("%s: %s" % (e, self.jsw.get_value(e)))
+          self.poutput("%s:\n%s" % (e, JsonWalk.dumps(self.jsw.get_value(e))))
     else:
       self.pwarning("bitte erstmal eine datei öffnen")
 
   def complete_print(self, text, line, begidx, endidx):
     """ completion für print """
-    return self.delimiter_complete(text, line, begidx, endidx, match_against=Cl.cl, delimiter=":")
+    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.jcl, delimiter=":")
 
-  ###################### set ########################
+  ###################### set_val ########################
   set_parser=cmd2.Cmd2ArgumentParser()
-  set_parser.add_argument('element', help='apply value of json element', choices_provider=ch_pr)
+  set_parser.add_argument('elements', help='json element(s)', nargs='+', choices_provider=json_choice_provider)
   set_parser.add_argument('-v', '--value', nargs=1, help='value of json element')
 
   
   @cmd2.with_argparser(set_parser)
-  def do_apply(self, args):
-    """ apply value to json element """
-    print("Cl.cl: %s" % Cl.cl)
-    self.poutput("set args: %s" % args)
+  def do_set_val(self, args):
+    """ set value of json element """
+    #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
+    for e in args.elements:
+      self.poutput("setting %s to %s" % (e, args.value[0]))
+      self.jsw.set_value(e,args.value[0])
 
 
   
