@@ -4,6 +4,7 @@ import os
 import json
 import re
 from copy import deepcopy
+from collections import deque
 import cmd2
 import jmespath
 
@@ -12,6 +13,7 @@ class JsonWalk:
   def __init__(self, js):
     self.cl=[]
     self.js=js
+    self.js_hist=deque([], 10)
   
   @property
   def js(self):
@@ -62,8 +64,11 @@ class JsonWalk:
     """
     if not s:
       return self._js
+    #js_copy=deepcopy(self._js)
     if set_val:
+      self.js_hist.append(deepcopy(self._js))
       v=self._convert_to_json(v)
+    _js=self._js
     o=self._js
     s=self._prepare_search_string(s)
     s_split=s.split('|')
@@ -76,7 +81,8 @@ class JsonWalk:
         idx_or_key=d.group(1)
       if set_val and c==(len(s_split)-1):
         o[idx_or_key]=v
-        self.build_completion_list()
+        self.js=_js
+        #self.build_completion_list()
       o=o[idx_or_key]
     return o
 
@@ -123,7 +129,13 @@ class JsonWalk:
   @staticmethod
   def dumps(o):
     """ gibt formatierten json string zurück """
-    return json.dumps(o, indent=4)    
+    return json.dumps(o, indent=2)    
+    
+  @staticmethod
+  def dump(o, path):
+    """ write object o to path """
+    with open(path, 'w') as _fw:
+      json.dump(o, _fw, indent=2)
     
 
 class App(cmd2.Cmd):
@@ -146,6 +158,7 @@ class App(cmd2.Cmd):
     #self.complete_open=self.path_complete
     self.jsw=None
     self.jcl=[]
+    self.wrk_file=None
 
   def json_choice_provider(self):
     return self.jcl
@@ -162,6 +175,7 @@ class App(cmd2.Cmd):
     except Exception as _exc:
       self.perror("laden der json nicht möglich %s:" % _exc)
     else:
+      self.wrk_file=s
       self.jsw=JsonWalk(js)
       self.jcl=self.jsw.cl
       self.psuccess("json geladen")
@@ -169,6 +183,30 @@ class App(cmd2.Cmd):
   def complete_open(self, text, line, begidx, endidx):
     """path completion für open"""
     return self.path_complete(text, line, begidx, endidx)
+
+  ############### save ########################
+
+  def do_save(self, s):
+    """ save to file s
+    if s is not provided or empty,none
+    save to wrk_file """
+    if s and self.jsw is not None:
+      JsonWalk.dump(self.jsw.js, s)
+    elif not s and self.jsw is not None:
+      JsonWalk.dump(self.jsw.js, self.wrk_file)
+    else:
+      self.pwarning("please open file at first")
+
+  def complete_save(self, text, line, begidx, endidx):
+    """path completion for save/write"""
+    return self.path_complete(text, line, begidx, endidx)
+
+  ##################### show hist ###################
+  def do_showhist(self,s):
+    """ show all hist entries """
+    if 
+    for c,e in enumerate(self.jsw.js_hist):
+      self.poutput("hist Nr. %s:\n%s" % (c, JsonWalk.dumps(e)))
 
   ##################### print #####################
   @cmd2.with_argument_list
@@ -182,7 +220,7 @@ class App(cmd2.Cmd):
         for e in s:
           self.poutput("%s:\n%s" % (e, JsonWalk.dumps(self.jsw.get_value(e))))
     else:
-      self.pwarning("bitte erstmal eine datei öffnen")
+      self.pwarning("please open file at first")
 
   def complete_print(self, text, line, begidx, endidx):
     """ completion für print """
