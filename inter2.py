@@ -49,13 +49,19 @@ class JsonWalk:
     s=self._prepare_search_string(s)
     return jmespath.search(s, self._js)
 
-  def _convert_to_json(self, v):
+  @staticmethod
+  def convert_to_json(v, check_type=False, raise_error=False):
     """ try to convert value to json
     if it doesn't work return 'v'"""
+    if check_type: raise_error=True
     try:
       js=json.loads(v)
     except json.JSONDecodeError:
+      if raise_error:
+        raise TypeError("not a json object")
       return v
+    if check_type and not isinstance(js, (list,dict)):
+      raise TypeError("json is not dict or list")
     return js
 
   def _handle_object_ref(self, s=None, set_val=False, v=None):
@@ -67,7 +73,7 @@ class JsonWalk:
     #js_copy=deepcopy(self._js)
     if set_val:
       self.js_hist.append(deepcopy(self._js))
-      v=self._convert_to_json(v)
+      v=JsonWalk.convert_to_json(v)
     _js=self._js
     o=self._js
     s=self._prepare_search_string(s)
@@ -89,7 +95,6 @@ class JsonWalk:
   def set_value(self, s="", v=None):
     """ set value """
     self._handle_object_ref(s, True, v)
-    
     
   def _rec_compl_build(self, o, s="", l=[]):
     """
@@ -149,13 +154,18 @@ class App(cmd2.Cmd):
     set <e> -v <value>              -> set value
     new <file>                      -> new file
                                         if file exists 'open' will be used
-    
   """
 
   def __init__(self):
     super().__init__()
     self.prompt="> "
     #self.complete_open=self.path_complete
+    self.jsw=None
+    self.jcl=[]
+    #self.hcl=[]
+    self.wrk_file=None
+
+  def _reset(self):
     self.jsw=None
     self.jcl=[]
     #self.hcl=[]
@@ -170,22 +180,44 @@ class App(cmd2.Cmd):
   def json_choice_provider(self):
     return self.jcl
 
+  ############# new ##########################
+  def do_new(self, s):
+    """  create new object """
+    if not self.jsw:
+      try:
+        if s:
+          js=JsonWalk.convert_to_json(s)
+        else: 
+          js={}
+      except Exception as _exc:
+        self.perror("laden der json nicht möglich %s:" % _exc)
+      else:
+        #self.wrk_file=s
+        self.jsw=JsonWalk(js)
+        self.jcl=self.jsw.cl
+        self.psuccess("json geladen")
+    else:
+      self.pwarning("close your working object at first")
+    
   ############# open ##########################
   def do_open(self, s):
     """ öffnet json/yaml datei
     usage:
       open <file>
     """
-    self.poutput("sim sim öffne %s ..." % s)
-    try:
-      js=JsonWalk.load(s)
-    except Exception as _exc:
-      self.perror("laden der json nicht möglich %s:" % _exc)
+    if not self.jsw:
+      self.poutput("sim sim öffne %s ..." % s)
+      try:
+        js=JsonWalk.load(s)
+      except Exception as _exc:
+        self.perror("laden der json nicht möglich %s:" % _exc)
+      else:
+        self.wrk_file=s
+        self.jsw=JsonWalk(js)
+        self.jcl=self.jsw.cl
+        self.psuccess("json geladen")
     else:
-      self.wrk_file=s
-      self.jsw=JsonWalk(js)
-      self.jcl=self.jsw.cl
-      self.psuccess("json geladen")
+      self.pwarning("close your working object at first")
       
   def complete_open(self, text, line, begidx, endidx):
     """path completion für open"""
@@ -198,8 +230,10 @@ class App(cmd2.Cmd):
     if s is not provided or empty,none
     save to wrk_file """
     if s and self.jsw is not None:
+      self.poutput("saving to %s" % s)
       JsonWalk.dump(self.jsw.js, s)
     elif not s and self.jsw is not None:
+      self.poutput("saving to current working file")
       JsonWalk.dump(self.jsw.js, self.wrk_file)
     else:
       self.pwarning("please open file at first")
@@ -230,8 +264,14 @@ class App(cmd2.Cmd):
   def do_close(self, s):
     """ close editing json objects """
     if self.jsw:
-      if len(self.jsw.js_hist):
-        i=self.read_input("save object before closing? ", completion_mode=cmd2.CompletionMode.CUSTOM, choices=["yes", "no"])
+      #if len(self.jsw.js_hist):
+      i=self.read_input("save object before closing? ", completion_mode=cmd2.CompletionMode.CUSTOM, choices=["yes", "no"])
+      if re.match("yes|ja|y|j", i, re.I):
+        i=self.read_input("saving object to: ", completion_mode=cmd2.CompletionMode.CUSTOM, completer=cmd2.Cmd.path_complete)
+        self.do_save(i)
+      self._reset()
+    else:
+      self.pwarning("please open file at first")
 
   ##################### print #####################
   @cmd2.with_argument_list
