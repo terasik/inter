@@ -158,7 +158,14 @@ class App(cmd2.Cmd):
     #self.complete_open=self.path_complete
     self.jsw=None
     self.jcl=[]
+    #self.hcl=[]
     self.wrk_file=None
+
+  def hist_choice_provider(self):
+    if self.jsw:
+      l=len(self.jsw.js_hist)
+      return [str(x) for x in range(l)]
+    return []
 
   def json_choice_provider(self):
     return self.jcl
@@ -202,11 +209,29 @@ class App(cmd2.Cmd):
     return self.path_complete(text, line, begidx, endidx)
 
   ##################### show hist ###################
+  @cmd2.with_argument_list
   def do_showhist(self,s):
-    """ show all hist entries """
-    if 
-    for c,e in enumerate(self.jsw.js_hist):
-      self.poutput("hist Nr. %s:\n%s" % (c, JsonWalk.dumps(e)))
+    """ show hist entries """
+    if self.jsw:
+      if s:
+         for c in s:
+          self.poutput("hist Nr. %s:\n%s" % (c, JsonWalk.dumps(self.jsw.js_hist[int(c)])))
+      else: 
+        for c,e in enumerate(self.jsw.js_hist):
+          self.poutput("hist Nr. %s:\n%s" % (c, JsonWalk.dumps(e)))
+    else:
+      self.pwarning("please open file at first")
+
+  def complete_showhist(self, text, line, begidx, endidx):
+    """ completion für print """
+    return self.basic_complete(text, line, begidx, endidx, match_against=self.hist_choice_provider())
+
+  ##################### close #####################
+  def do_close(self, s):
+    """ close editing json objects """
+    if self.jsw:
+      if len(self.jsw.js_hist):
+        i=self.read_input("save object before closing? ", completion_mode=cmd2.CompletionMode.CUSTOM, choices=["yes", "no"])
 
   ##################### print #####################
   @cmd2.with_argument_list
