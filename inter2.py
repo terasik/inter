@@ -11,6 +11,7 @@ import jmespath
 class JsonWalk:
   """ spaziergang durch json objekte """
   def __init__(self, js):
+    #print("js: %s type: %s" % (js, type(js)))
     self.cl=[]
     self.js=js
     self.js_hist=deque([], 10)
@@ -56,9 +57,9 @@ class JsonWalk:
     if check_type: raise_error=True
     try:
       js=json.loads(v)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as _jexc:
       if raise_error:
-        raise TypeError("not a json object")
+        raise TypeError("json error: %s" % _jexc) 
       return v
     if check_type and not isinstance(js, (list,dict)):
       raise TypeError("json is not dict or list")
@@ -68,7 +69,7 @@ class JsonWalk:
     """ return reference to part of js 
     described with s
     """
-    if not s:
+    if not s and not set_val:
       return self._js
     #js_copy=deepcopy(self._js)
     if set_val:
@@ -92,10 +93,50 @@ class JsonWalk:
       o=o[idx_or_key]
     return o
 
+  def set_object(self, opath ="", value=None):
+    """ setting value of object or object elements
+    params:
+      opath: str  -> object element path string (Ex: 'a:b[0]')
+      value: json -> value to be set
+    return:
+    """
+    print(f"opath: {opath}, value={value}")
+    if opath:
+      value=JsonWalk.convert_to_json(value)
+    else:
+      # also check if value is list or dict
+      value=JsonWalk.convert_to_json(value, True)
+    self.js_hist.append(deepcopy(self.js))
+    obj=self.js
+    opath_search=self._prepare_search_string(opath)
+    opath_split=[x for x in opath_search.split('|') if x]
+    print(f"opath: {opath}, value={value}, opath_search: {opath_search}, opath_split: {opath_split}")
+    
+    for cnt,ele in enumerate(opath_split):
+      l=re.match(r"\[(\d+)\]", ele)
+      d=re.match(r"\"(.+?)\"", ele)
+      if l:
+        idx_or_key=int(l.group(1))
+      else:
+        idx_or_key=d.group(1)
+      if cnt < (len(opath_split)-1):
+        obj=obj[idx_or_key]
+    if opath:
+      print(f"setting obj: {obj}  idx_or_key: {idx_or_key} to {value} type: {type(value)}")
+      obj[idx_or_key]=value
+      self.build_completion_list()
+    else:
+      print(f"setting obj: {obj} to {value} type: {type(value)}")
+      self.js=value
+
+    
+
+
   def set_value(self, s="", v=None):
     """ set value """
-    self._handle_object_ref(s, True, v)
-    
+    #self._handle_object_ref(s, True, v)
+    self.set_object(s, v)    
+
   def _rec_compl_build(self, o, s="", l=[]):
     """
     recursiv build of completion list
@@ -181,16 +222,18 @@ class App(cmd2.Cmd):
     return self.jcl
 
   ############# new ##########################
+  @cmd2.with_argument_list
   def do_new(self, s):
     """  create new object """
+    js={}
+    if len(s) > 1:
+      self.pwarning("loading only first arg. other args will be ignored")
     if not self.jsw:
       try:
         if s:
-          js=JsonWalk.convert_to_json(s)
-        else: 
-          js={}
+          js=JsonWalk.convert_to_json(s[0], True, True)
       except Exception as _exc:
-        self.perror("laden der json nicht möglich %s:" % _exc)
+        self.perror("laden der json nicht möglich: %s" % _exc)
       else:
         #self.wrk_file=s
         self.jsw=JsonWalk(js)
@@ -206,7 +249,7 @@ class App(cmd2.Cmd):
       open <file>
     """
     if not self.jsw:
-      self.poutput("sim sim öffne %s ..." % s)
+      #self.poutput("sim sim öffne %s ..." % s)
       try:
         js=JsonWalk.load(s)
       except Exception as _exc:
@@ -293,7 +336,7 @@ class App(cmd2.Cmd):
 
   ###################### set_val ########################
   set_parser=cmd2.Cmd2ArgumentParser()
-  set_parser.add_argument('elements', help='json element(s)', nargs='+', choices_provider=json_choice_provider)
+  set_parser.add_argument('elements', help='json element(s)', nargs='*', choices_provider=json_choice_provider)
   set_parser.add_argument('-v', '--value', nargs=1, help='value of json element')
 
   
@@ -301,11 +344,15 @@ class App(cmd2.Cmd):
   def do_set_val(self, args):
     """ set value of json element """
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
-    for e in args.elements:
-      self.poutput("setting %s to %s" % (e, args.value[0]))
-      self.jsw.set_value(e,args.value[0])
-
-
+    if args.elements:
+      for e in args.elements:
+        self.poutput("setting element %s to %s" % (e, args.value[0]))
+        self.jsw.set_value(e,args.value[0])
+    else:
+      self.poutput("setting whole object to %s" % (args.value[0]))
+      self.jsw.set_value("", args.value[0])
+    self.jcl=self.jsw.cl
+      
   
 if __name__ == '__main__':
   c = App()
