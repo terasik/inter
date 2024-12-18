@@ -65,18 +65,14 @@ class JsonWalk:
       raise TypeError("json is not dict or list")
     return js
 
-  def _handle_object_ref(self, s=None, set_val=False, v=None):
+  def _get_object_ref(self, s=""):
     """ return reference to part of js 
     described with s
     """
-    if not s and not set_val:
+    if not s:
       return self._js
     #js_copy=deepcopy(self._js)
-    if set_val:
-      self.js_hist.append(deepcopy(self._js))
-      v=JsonWalk.convert_to_json(v)
-    _js=self._js
-    o=self._js
+    o=self.js
     s=self._prepare_search_string(s)
     s_split=s.split('|')
     for c,e in enumerate(s_split):
@@ -86,10 +82,6 @@ class JsonWalk:
         idx_or_key=int(l.group(1))
       else:
         idx_or_key=d.group(1)
-      if set_val and c==(len(s_split)-1):
-        o[idx_or_key]=v
-        self.js=_js
-        #self.build_completion_list()
       o=o[idx_or_key]
     return o
 
