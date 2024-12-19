@@ -65,34 +65,36 @@ class JsonWalk:
       raise TypeError("json is not dict or list")
     return js
 
-  def _get_object_ref(self, s=""):
-    """ return reference to part of js 
-    described with s
+  def _get_object_ref(self, opath=""):
+    """ return reference to object or object element 
+    params:
+      opath: str  -> object element path string (Ex: 'a:b[0]')
+    return:
+      obj: json   -> reference to object or obj element
     """
-    if not s:
-      return self._js
-    #js_copy=deepcopy(self._js)
-    o=self.js
-    s=self._prepare_search_string(s)
-    s_split=s.split('|')
-    for c,e in enumerate(s_split):
-      l=re.match(r"\[(\d+)\]", e)
-      d=re.match(r"\"(.+?)\"", e)
+    if not opath:
+      return self.js
+    obj=self.js
+    opath_search=self._prepare_search_string(opath)
+    opath_split=[x for x in opath_search.split('|') if x]
+    # TODO: make own function for loop
+    for cnt,ele in enumerate(opath_split):
+      l=re.match(r"\[(\d+)\]", ele)
+      d=re.match(r"\"(.+?)\"", ele)
       if l:
         idx_or_key=int(l.group(1))
       else:
         idx_or_key=d.group(1)
-      o=o[idx_or_key]
-    return o
+      obj=obj[idx_or_key]
+    return obj
 
   def set_object(self, opath ="", value=None):
-    """ setting value of object or object elements
+    """ setting value of object or object element
     params:
       opath: str  -> object element path string (Ex: 'a:b[0]')
       value: json -> value to be set
     return:
     """
-    print(f"opath: {opath}, value={value}")
     if opath:
       value=JsonWalk.convert_to_json(value)
     else:
@@ -102,8 +104,6 @@ class JsonWalk:
     obj=self.js
     opath_search=self._prepare_search_string(opath)
     opath_split=[x for x in opath_search.split('|') if x]
-    print(f"opath: {opath}, value={value}, opath_search: {opath_search}, opath_split: {opath_split}")
-    
     for cnt,ele in enumerate(opath_split):
       l=re.match(r"\[(\d+)\]", ele)
       d=re.match(r"\"(.+?)\"", ele)
@@ -114,20 +114,18 @@ class JsonWalk:
       if cnt < (len(opath_split)-1):
         obj=obj[idx_or_key]
     if opath:
-      print(f"setting obj: {obj}  idx_or_key: {idx_or_key} to {value} type: {type(value)}")
       obj[idx_or_key]=value
-      self.build_completion_list()
+      self.cl=self.build_completion_list()
     else:
-      print(f"setting obj: {obj} to {value} type: {type(value)}")
       self.js=value
-
-    
-
+    return self.cl
 
   def set_value(self, s="", v=None):
     """ set value """
     #self._handle_object_ref(s, True, v)
-    self.set_object(s, v)    
+    return self.set_object(s, v)
+
+  def append_value(self, opath="", v=None) 
 
   def _rec_compl_build(self, o, s="", l=[]):
     """
@@ -167,13 +165,13 @@ class JsonWalk:
   @staticmethod
   def dumps(o):
     """ gibt formatierten json string zurück """
-    return json.dumps(o, indent=2)    
+    return json.dumps(o, indent=2, ensure_ascii=False)    
     
   @staticmethod
   def dump(o, path):
     """ write object o to path """
     with open(path, 'w') as _fw:
-      json.dump(o, _fw, indent=2)
+      json.dump(o, _fw, indent=2, ensure_ascii=False)
     
 
 class App(cmd2.Cmd):
@@ -318,7 +316,7 @@ class App(cmd2.Cmd):
         self.poutput(JsonWalk.dumps(self.jsw.js))
       else:
         for e in s:
-          self.poutput("%s:\n%s" % (e, JsonWalk.dumps(self.jsw.get_value(e))))
+          self.poutput("%s -> \n%s" % (e, JsonWalk.dumps(self.jsw.get_value(e))))
     else:
       self.pwarning("please open file at first")
 
@@ -336,16 +334,36 @@ class App(cmd2.Cmd):
   def do_set_val(self, args):
     """ set value of json element """
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
+    jcl=self.jcl
     if args.elements:
       for e in args.elements:
         self.poutput("setting element %s to %s" % (e, args.value[0]))
-        self.jsw.set_value(e,args.value[0])
+        jcl=self.jsw.set_value(e,args.value[0])
     else:
       self.poutput("setting whole object to %s" % (args.value[0]))
-      self.jsw.set_value("", args.value[0])
-    self.jcl=self.jsw.cl
-      
+      jcl=self.jsw.set_value("", args.value[0])
+    self.jcl=jcl  
   
+  ###################### append to list ########################
+  append_parser=cmd2.Cmd2ArgumentParser()
+  append_parser.add_argument('elements', help='json element(s). element should be list', nargs='+', choices_provider=json_choice_provider)
+  append_parser.add_argument('-v', '--value', nargs=1, help='value to append to list')
+
+  
+  @cmd2.with_argparser(append_parser)
+  def do_append(self, args):
+    """ set value of json element """
+    #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
+    jcl=self.jcl
+    if args.elements:
+      for e in args.elements:
+        self.poutput("setting element %s to %s" % (e, args.value[0]))
+        jcl=self.jsw.set_value(e,args.value[0])
+    else:
+      self.poutput("setting whole object to %s" % (args.value[0]))
+      jcl=self.jsw.set_value("", args.value[0])
+    self.jcl=jcl  
+
 if __name__ == '__main__':
   c = App()
   sys.exit(c.cmdloop())
