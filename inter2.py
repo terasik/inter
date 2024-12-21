@@ -125,7 +125,32 @@ class JsonWalk:
     #self._handle_object_ref(s, True, v)
     return self.set_object(s, v)
 
-  def append_value(self, opath="", v=None) 
+  def append_value(self, opath="", value=None):
+    """ append value to list """
+    value=JsonWalk.convert_to_json(value)
+    if type(self._get_object_ref(opath)) != list:
+      raise TypeError("object path is not a list")
+    self.js_hist.append(deepcopy(self.js))
+    obj=self.js
+    opath_search=self._prepare_search_string(opath)
+    opath_split=[x for x in opath_search.split('|') if x]
+    for cnt,ele in enumerate(opath_split):
+      l=re.match(r"\[(\d+)\]", ele)
+      d=re.match(r"\"(.+?)\"", ele)
+      if l:
+        idx_or_key=int(l.group(1))
+      else:
+        idx_or_key=d.group(1)
+      if cnt < (len(opath_split)-1):
+        obj=obj[idx_or_key]
+    if opath:
+      obj[idx_or_key].append(value)
+    else:
+      self.js.append(value)
+    self.cl=self.build_completion_list()
+    return self.cl 
+
+ 
 
   def _rec_compl_build(self, o, s="", l=[]):
     """
@@ -346,8 +371,8 @@ class App(cmd2.Cmd):
   
   ###################### append to list ########################
   append_parser=cmd2.Cmd2ArgumentParser()
-  append_parser.add_argument('elements', help='json element(s). element should be list', nargs='+', choices_provider=json_choice_provider)
-  append_parser.add_argument('-v', '--value', nargs=1, help='value to append to list')
+  append_parser.add_argument('elements', help='json element(s). element should be list', nargs='*', choices_provider=json_choice_provider)
+  append_parser.add_argument('-v', '--values', nargs='+', help='append value')
 
   
   @cmd2.with_argparser(append_parser)
@@ -356,12 +381,14 @@ class App(cmd2.Cmd):
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
     jcl=self.jcl
     if args.elements:
-      for e in args.elements:
-        self.poutput("setting element %s to %s" % (e, args.value[0]))
-        jcl=self.jsw.set_value(e,args.value[0])
+      for ele in args.elements:
+        for value in args.values:
+          self.poutput("append %s to element %s" % (value, ele))
+          jcl=self.jsw.append_value(ele, value)
     else:
-      self.poutput("setting whole object to %s" % (args.value[0]))
-      jcl=self.jsw.set_value("", args.value[0])
+      for value in args.values:
+        self.poutput("append %s to whole object" % (value))
+        jcl=self.jsw.append_value("", value)
     self.jcl=jcl  
 
 if __name__ == '__main__':
