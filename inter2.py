@@ -15,6 +15,8 @@ class JsonWalk:
     self.cl=[]
     self.js=js
     self.js_hist=deque([], 10)
+
+
   
   @property
   def js(self):
@@ -150,7 +152,27 @@ class JsonWalk:
     self.cl=self.build_completion_list()
     return self.cl 
 
- 
+  def delete_element(self, opath=""):
+    """ delete element ob object """
+    self.js_hist.append(deepcopy(self.js))
+    obj=self.js
+    opath_search=self._prepare_search_string(opath)
+    opath_split=[x for x in opath_search.split('|') if x]
+    for cnt,ele in enumerate(opath_split):
+      l=re.match(r"\[(\d+)\]", ele)
+      d=re.match(r"\"(.+?)\"", ele)
+      if l:
+        idx_or_key=int(l.group(1))
+      else:
+        idx_or_key=d.group(1)
+      if cnt < (len(opath_split)-1):
+        obj=obj[idx_or_key]
+    if opath:
+      del obj[idx_or_key]
+      self.cl=self.build_completion_list()
+    else:
+      self.js={}
+    return self.cl 
 
   def _rec_compl_build(self, o, s="", l=[]):
     """
@@ -222,6 +244,7 @@ class App(cmd2.Cmd):
     self.wrk_file=None
 
   def _reset(self):
+    self.jsw.js_hist=
     self.jsw=None
     self.jcl=[]
     #self.hcl=[]
