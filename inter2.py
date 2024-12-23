@@ -15,8 +15,6 @@ class JsonWalk:
     self.cl=[]
     self.js=js
     self.js_hist=deque([], 10)
-
-
   
   @property
   def js(self):
@@ -154,6 +152,11 @@ class JsonWalk:
 
   def delete_element(self, opath=""):
     """ delete element ob object """
+    if opath:
+      try:
+        self._get_object_ref(opath)
+      except (KeyError,IndexError) as exc:
+        raise ValueError("element path %s doesn't exist. exception: %s" % (opath, exc))
     self.js_hist.append(deepcopy(self.js))
     obj=self.js
     opath_search=self._prepare_search_string(opath)
@@ -244,7 +247,7 @@ class App(cmd2.Cmd):
     self.wrk_file=None
 
   def _reset(self):
-    self.jsw.js_hist=
+    self.jsw.js_hist.clear()
     self.jsw=None
     self.jcl=[]
     #self.hcl=[]
@@ -369,6 +372,28 @@ class App(cmd2.Cmd):
       self.pwarning("please open file at first")
 
   def complete_print(self, text, line, begidx, endidx):
+    """ completion für print """
+    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.jcl, delimiter=":")
+
+  ##################### delete #####################
+  @cmd2.with_argument_list
+  def do_delete(self, args):
+    """ delete elements fromd object """
+    #self.poutput("print compl list: %s" % self.jsw.cl)
+    jcl=self.jcl  
+    if self.jsw:
+      if not args:
+        self.pwarning("deleting whole object..")
+        jcl=self.jsw.delete_element()
+      else:
+        for e in args:
+          self.poutput("deleting element %s" % e)
+          jcl=self.jsw.delete_element(e)
+      self.jcl=jcl  
+    else:
+      self.pwarning("please open file at first")
+
+  def complete_delete(self, text, line, begidx, endidx):
     """ completion für print """
     return self.delimiter_complete(text, line, begidx, endidx, match_against=self.jcl, delimiter=":")
 
