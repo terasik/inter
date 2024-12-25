@@ -65,19 +65,15 @@ class JsonWalk:
       raise TypeError("json is not dict or list")
     return js
 
-  def _get_object_ref(self, opath=""):
-    """ return reference to object or object element 
-    params:
-      opath: str  -> object element path string (Ex: 'a:b[0]')
-    return:
-      obj: json   -> reference to object or obj element
-    """
-    if not opath:
-      return self.js
+  def _prepare_obj_for_action(self, opath, only_ref=False):
+    """ preparing objects for next processing 
+    (append, delete, setting values ) """
+    if not only_ref:
+      self.js_hist.append(deepcopy(self.js))
     obj=self.js
+    idx_or_key=None
     opath_search=self._prepare_search_string(opath)
     opath_split=[x for x in opath_search.split('|') if x]
-    # TODO: make own function for loop
     for cnt,ele in enumerate(opath_split):
       l=re.match(r"\[(\d+)\]", ele)
       d=re.match(r"\"(.+?)\"", ele)
@@ -85,8 +81,21 @@ class JsonWalk:
         idx_or_key=int(l.group(1))
       else:
         idx_or_key=d.group(1)
-      obj=obj[idx_or_key]
-    return obj
+      if (cnt < (len(opath_split)-1)) or only_ref:
+        obj=obj[idx_or_key]
+    return (obj, idx_or_key)
+  
+
+  def _get_object_ref(self, opath=""):
+    """ return reference to object or object element 
+    params:
+      opath: str  -> object element path string (Ex: 'a:b[0]')
+    return:
+      obj: json   -> reference to object or obj element
+    """
+    r=self._prepare_obj_for_action(opath, True)
+    return r[0]
+
 
   def set_object(self, opath ="", value=None):
     """ setting value of object or object element
@@ -100,19 +109,7 @@ class JsonWalk:
     else:
       # also check if value is list or dict
       value=JsonWalk.convert_to_json(value, True)
-    self.js_hist.append(deepcopy(self.js))
-    obj=self.js
-    opath_search=self._prepare_search_string(opath)
-    opath_split=[x for x in opath_search.split('|') if x]
-    for cnt,ele in enumerate(opath_split):
-      l=re.match(r"\[(\d+)\]", ele)
-      d=re.match(r"\"(.+?)\"", ele)
-      if l:
-        idx_or_key=int(l.group(1))
-      else:
-        idx_or_key=d.group(1)
-      if cnt < (len(opath_split)-1):
-        obj=obj[idx_or_key]
+    obj,idx_or_key=self._prepare_obj_for_action(opath) 
     if opath:
       obj[idx_or_key]=value
       self.cl=self.build_completion_list()
@@ -130,19 +127,7 @@ class JsonWalk:
     value=JsonWalk.convert_to_json(value)
     if type(self._get_object_ref(opath)) != list:
       raise TypeError("object path is not a list")
-    self.js_hist.append(deepcopy(self.js))
-    obj=self.js
-    opath_search=self._prepare_search_string(opath)
-    opath_split=[x for x in opath_search.split('|') if x]
-    for cnt,ele in enumerate(opath_split):
-      l=re.match(r"\[(\d+)\]", ele)
-      d=re.match(r"\"(.+?)\"", ele)
-      if l:
-        idx_or_key=int(l.group(1))
-      else:
-        idx_or_key=d.group(1)
-      if cnt < (len(opath_split)-1):
-        obj=obj[idx_or_key]
+    obj,idx_or_key=self._prepare_obj_for_action(opath)
     if opath:
       obj[idx_or_key].append(value)
     else:
@@ -157,19 +142,7 @@ class JsonWalk:
         self._get_object_ref(opath)
       except (KeyError,IndexError) as exc:
         raise ValueError("element path %s doesn't exist. exception: %s" % (opath, exc))
-    self.js_hist.append(deepcopy(self.js))
-    obj=self.js
-    opath_search=self._prepare_search_string(opath)
-    opath_split=[x for x in opath_search.split('|') if x]
-    for cnt,ele in enumerate(opath_split):
-      l=re.match(r"\[(\d+)\]", ele)
-      d=re.match(r"\"(.+?)\"", ele)
-      if l:
-        idx_or_key=int(l.group(1))
-      else:
-        idx_or_key=d.group(1)
-      if cnt < (len(opath_split)-1):
-        obj=obj[idx_or_key]
+    obj,idx_or_key=self._prepare_obj_for_action(opath)
     if opath:
       del obj[idx_or_key]
       self.cl=self.build_completion_list()
