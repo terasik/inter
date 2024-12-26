@@ -44,7 +44,7 @@ def load_json(path):
     js=json.load(_fr)
   return js
 
-def dumps(obj):
+def obj_dumps(obj):
   """ return indentet json object
   as string. converting to ascii is disabled
 

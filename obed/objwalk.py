@@ -3,20 +3,22 @@ modul for handling json,yaml objects
 - editing objects (delete,append,set values to elements)
 - build completion list for object elements
 """
-
-import sys
-import os
-import json
 import re
 from copy import deepcopy
 from collections import deque
 import cmd2
 import jmespath
 
-class ObjWalk:
-  """ spaziergang durch json objekte """
-  def __init__(self, obj):
-    self.cl=[]
+class ObjWalk(cmd2.Cmd):
+  """ class to walk through (json,yaml) objects 
+  and 
+    - editing object elements
+    - build completion lists for existing elemets
+    - getting values ob object elements
+  """
+  def __init__(self, obj={}):
+    super().__init__()
+    self.coml_list=[]
     self.obj=obj
     self.obj_hist=deque([], 10)
   
@@ -25,9 +27,9 @@ class ObjWalk:
     return self._obj
 
   @obj.setter
-  def obj(self, o):
-    self._obj=o
-    self.cl=self.build_completion_list()
+  def obj(self, obj):
+    self._obj=obj
+    self.build_completion_list()
 
   def _prepare_search_string(self, opath=""):
     """ convert opath to jmespath query string
@@ -41,24 +43,33 @@ class ObjWalk:
     return opath_search
 
   def build_completion_list(self):
-    """ bildet completion liste vom gesamten js objekt 
+    """ build completion  list for object paths
+    (opath parameters by many functions)
     ['a[0]', 'a[1]', "b", "c", "c:o1", "c:o2", d]
   
     """
-    return self._rec_compl_build(self._obj, "", [])
+    self.compl_list=self._rec_compl_build(self._obj, "", [])
 
-  def get_value(self, s=""):
-    """ 
-    liefert objekt anhand des suchstrings 
+  def get_value(self, opath=""):
+    """ return value of element path (opath)
     """
-    if not s:
+    if not opath:
       return self._obj
-    s=self._prepare_search_string(s)
-    return jmespath.search(s, self._obj)
+    opath_search=self._prepare_search_string(opath)
+    return jmespath.search(opath_search, self.obj)
 
   def _prepare_obj_for_action(self, opath, only_ref=False):
     """ preparing objects for next processing 
-    (append, delete, setting values ) """
+    (append, delete, setting values ) 
+    params:
+      opath: str  -> object element path string (Ex: 'a:b[0]')
+      only_ref: bool -> if true get element of object 
+                          which described by opath
+                        if false return element ob obejct which 
+                          will be edited
+      return: tuppel -> (object element, index_or_key of element)
+    
+    """
     if not only_ref:
       self.obj_hist.append(deepcopy(self.obj))
     obj=self.obj
@@ -88,12 +99,12 @@ class ObjWalk:
     return r[0]
 
 
-  def set_object(self, opath ="", value=None):
+  def set_value(self, opath ="", value=None):
     """ setting value of object or object element
     params:
       opath: str  -> object element path string (Ex: 'a:b[0]')
       value: json -> value to be set
-    return:
+    return: -
     """
     if opath:
       value=JsonWalk.convert_to_json(value)
@@ -103,18 +114,14 @@ class ObjWalk:
     obj,idx_or_key=self._prepare_obj_for_action(opath) 
     if opath:
       obj[idx_or_key]=value
-      self.cl=self.build_completion_list()
+      self.build_completion_list()
     else:
       self.obj=value
-    return self.cl
-
-  def set_value(self, s="", v=None):
-    """ set value """
-    #self._handle_object_ref(s, True, v)
-    return self.set_object(s, v)
 
   def append_value(self, opath="", value=None):
-    """ append value to list """
+    """ append value to list in object
+    described by opath
+    """
     value=JsonWalk.convert_to_json(value)
     if type(self._get_object_ref(opath)) != list:
       raise TypeError("object path is not a list")
@@ -123,11 +130,12 @@ class ObjWalk:
       obj[idx_or_key].append(value)
     else:
       self.obj.append(value)
-    self.cl=self.build_completion_list()
-    return self.cl 
+    self.build_completion_list()
 
   def delete_element(self, opath=""):
-    """ delete element ob object """
+    """ delete object element
+    described by opath
+    """
     if opath:
       try:
         self._get_object_ref(opath)
@@ -136,14 +144,20 @@ class ObjWalk:
     obj,idx_or_key=self._prepare_obj_for_action(opath)
     if opath:
       del obj[idx_or_key]
-      self.cl=self.build_completion_list()
+      self.build_completion_list()
     else:
       self.obj={}
-    return self.cl 
 
   def _rec_compl_build(self, o, s="", l=[]):
     """
-    recursiv build of completion list
+    recursiv build of completion list. 
+    walk through object and check if lements are lists
+    or dicts. 
+    by dicts append ':' to dict key (ex.: book:id)
+    by lists append '[]' with index (ex.: [1][45])
+    by others go to next element. example:
+    object: { "book": {"id": 123, "authors": ["kira", "juraj]}}"}
+    complition list: ["book:", "book:id", "book:authors[0]", "book:authors[1]"]
     """
     if type(o)==list:
       if not o:
@@ -168,6 +182,4 @@ class ObjWalk:
     else:
       print("ERROR: übergebenes objekt ist weder list noch dict")
     return l
-
-    
 
