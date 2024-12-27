@@ -26,8 +26,6 @@ class Obed(ObjWalk):
 
   def _reset(self):
     self.obj_hist.clear()
-    self.jsw=None
-    self.jcl=[]
     #self.hcl=[]
     self.wrk_file=None
 
@@ -38,7 +36,7 @@ class Obed(ObjWalk):
     return []
 
   def json_choice_provider(self):
-    return self.jcl
+    return self.compl_list
 
   ############# new ##########################
   @cmd2.with_argument_list
@@ -56,7 +54,7 @@ class Obed(ObjWalk):
       else:
         #self.wrk_file=s
         self.jsw=JsonWalk(js)
-        self.jcl=self.jsw.cl
+        self.compl_list=self.jsw.cl
         self.psuccess("json geladen")
     else:
       self.pwarning("close your working object at first")
@@ -76,7 +74,7 @@ class Obed(ObjWalk):
       else:
         self.wrk_file=s
         self.jsw=JsonWalk(js)
-        self.jcl=self.jsw.cl
+        self.compl_list=self.jsw.cl
         self.psuccess("json geladen")
     else:
       self.pwarning("close your working object at first")
@@ -149,14 +147,14 @@ class Obed(ObjWalk):
 
   def complete_print(self, text, line, begidx, endidx):
     """ completion für print """
-    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.jcl, delimiter=":")
+    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
 
   ##################### delete #####################
   @cmd2.with_argument_list
   def do_delete(self, args):
     """ delete elements fromd object """
     #self.poutput("print compl list: %s" % self.jsw.cl)
-    jcl=self.jcl  
+    jcl=self.compl_list  
     if self.jsw:
       if not args:
         self.pwarning("deleting whole object..")
@@ -165,13 +163,13 @@ class Obed(ObjWalk):
         for e in args:
           self.poutput("deleting element %s" % e)
           jcl=self.jsw.delete_element(e)
-      self.jcl=jcl  
+      self.compl_list=jcl  
     else:
       self.pwarning("please open file at first")
 
   def complete_delete(self, text, line, begidx, endidx):
     """ completion für print """
-    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.jcl, delimiter=":")
+    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
 
   ###################### set_val ########################
   set_parser=cmd2.Cmd2ArgumentParser()
@@ -183,7 +181,6 @@ class Obed(ObjWalk):
   def do_set_val(self, args):
     """ set value of json element """
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
-    jcl=self.jcl
     if args.elements:
       for e in args.elements:
         self.poutput("setting element %s to %s" % (e, args.value[0]))
@@ -191,7 +188,6 @@ class Obed(ObjWalk):
     else:
       self.poutput("setting whole object to %s" % (args.value[0]))
       jcl=self.jsw.set_value("", args.value[0])
-    self.jcl=jcl  
   
   ###################### append to list ########################
   append_parser=cmd2.Cmd2ArgumentParser()
@@ -203,17 +199,15 @@ class Obed(ObjWalk):
   def do_append(self, args):
     """ set value of json element """
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
-    jcl=self.jcl
     if args.elements:
       for ele in args.elements:
         for value in args.values:
           self.poutput("append %s to element %s" % (value, ele))
-          jcl=self.jsw.append_value(ele, value)
+          self.append_value(ele, value)
     else:
       for value in args.values:
         self.poutput("append %s to whole object" % (value))
-        jcl=self.jsw.append_value("", value)
-    self.jcl=jcl  
+        self.append_value("", value)
 
 if __name__ == '__main__':
   c = Obed()
