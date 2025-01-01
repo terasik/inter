@@ -16,7 +16,7 @@ class ObjWalk(cmd2.Cmd):
     - build completion lists for existing elemets
     - getting values ob object elements
   """
-  def __init__(self, obj={}):
+  def __init__(self, obj=None):
     super().__init__()
     self.coml_list=[]
     self.obj=obj

@@ -4,9 +4,10 @@ import sys
 import os
 import cmd2
 from obed.objwalk import ObjWalk
-from obed.utils import obj_dumps
+from obed.utils import obj_dumps, convert_to_json, load_json
+from obed.argparsers import ObedArgParsers
 
-class Obed(ObjWalk):
+class Obed(ObjWalk, ObedArgParsers):
 
   """ handle json/yaml interactive
   cmd list:
@@ -28,75 +29,89 @@ class Obed(ObjWalk):
     self.obj_hist.clear()
     #self.hcl=[]
     self.wrk_file=None
+    self.obj=None
 
   def hist_choice_provider(self):
-    if self.jsw:
-      l=len(self.obj_hist)
-      return [str(x) for x in range(l)]
-    return []
+    l=len(self.obj_hist)
+    return [str(x) for x in range(l)]
 
   def json_choice_provider(self):
     return self.compl_list
 
+  def warn(self, warn_msg=""):
+    self.pwarning(warn_msg)
+
+  @staticmethod
+  def open_at_first(f):
+    def inner(*args):
+      inst=args[0]
+      if inst.obj is not None:
+        return f(*args)
+      inst.warn("open/create new object at first")
+      return
+    return inner
+
+  @staticmethod
+  def close_at_first(f):
+    def inner(*args):
+      inst=args[0]
+      if inst.obj is None:
+        return f(*args)
+      inst.warn("close your current object at first")
+      return
+    return inner
+
   ############# new ##########################
   @cmd2.with_argument_list
-  def do_new(self, s):
+  @Obed.close_at_first
+  def do_new(self, args):
     """  create new object """
     js={}
-    if len(s) > 1:
+    if len(args) > 1:
       self.pwarning("loading only first arg. other args will be ignored")
-    if not self.jsw:
-      try:
-        if s:
-          js=JsonWalk.convert_to_json(s[0], True, True)
-      except Exception as _exc:
-        self.perror("laden der json nicht möglich: %s" % _exc)
-      else:
-        #self.wrk_file=s
-        self.jsw=JsonWalk(js)
-        self.compl_list=self.jsw.cl
-        self.psuccess("json geladen")
+    try:
+      if args:
+        js=convert_to_json(args[0], True, True)
+    except Exception as _exc:
+      self.perror("not possible to load argument as json obj: %s" % _exc)
     else:
-      self.pwarning("close your working object at first")
+      #self.wrk_file=s
+      self.obj=js
+      #self.psuccess("json geladen")
     
   ############# open ##########################
-  def do_open(self, s):
+  @Obed.close_at_first
+  def do_open(self, arg):
     """ öffnet json/yaml datei
     usage:
       open <file>
     """
-    if not self.jsw:
-      #self.poutput("sim sim öffne %s ..." % s)
-      try:
-        js=JsonWalk.load(s)
-      except Exception as _exc:
-        self.perror("laden der json nicht möglich %s:" % _exc)
-      else:
-        self.wrk_file=s
-        self.jsw=JsonWalk(js)
-        self.compl_list=self.jsw.cl
-        self.psuccess("json geladen")
+    #self.poutput("sim sim öffne %s ..." % s)
+    try:
+      js=load_json(arg)
+    except Exception as _exc:
+      self.perror("laden der json nicht möglich %s:" % _exc)
     else:
-      self.pwarning("close your working object at first")
+      self.wrk_file=arg
+      self.obj=js
+      #self.psuccess("json geladen")
       
   def complete_open(self, text, line, begidx, endidx):
     """path completion für open"""
     return self.path_complete(text, line, begidx, endidx)
 
   ############### save ########################
-
-  def do_save(self, s):
+  @Obed.open_at_first
+  def do_save(self, arg):
     """ save to file s
     if s is not provided or empty,none
     save to wrk_file """
-    if s and self.jsw is not None:
-      self.poutput("saving to %s" % s)
-      JsonWalk.dump(self.jsw.js, s)
-    elif not s and self.jsw is not None:
-      self.poutput("saving to current working file")
-      JsonWalk.dump(self.jsw.js, self.wrk_file)
+    if arg:
+      self.poutput("saving to %s" % arg)
+      dump_json(self.obj, arg)
     else:
-      self.pwarning("please open file at first")
+      self.poutput("saving to current working file")
+      JsonWalk.dump(self.obj, self.wrk_file)
 
   def complete_save(self, text, line, begidx, endidx):
     """path completion for save/write"""
@@ -104,10 +119,10 @@ class Obed(ObjWalk):
 
   ##################### show hist ###################
   @cmd2.with_argument_list
-  def do_showhist(self,s):
+  def do_showhist(self, args):
     """ show hist entries """
-    if s:
-       for c in s:
+    if args:
+      for c in args:
         self.poutput("hist Nr. %s:\n%s" % (c, obj_dumps(self.obj_hist[int(c)])))
     else: 
       for c,e in enumerate(self.obj_hist):
@@ -118,7 +133,7 @@ class Obed(ObjWalk):
     return self.basic_complete(text, line, begidx, endidx, match_against=self.hist_choice_provider())
 
   ##################### close #####################
-  def do_close(self, s):
+  def do_close(self, arg):
     """ close editing json objects """
     #if len(self.obj_hist):
     i=self.read_input("save object before closing? ", 
@@ -133,17 +148,14 @@ class Obed(ObjWalk):
 
   ##################### print #####################
   @cmd2.with_argument_list
-  def do_print(self, s):
+  def do_print(self, args):
     """ zeige geladenes json """
     #self.poutput("print compl list: %s" % self.jsw.cl)
-    if self.jsw:
-      if not s:
-        self.poutput(JsonWalk.dumps(self.jsw.js))
-      else:
-        for e in s:
-          self.poutput("%s -> \n%s" % (e, JsonWalk.dumps(self.jsw.get_value(e))))
+    if not args:
+      self.poutput(obj_dumps(self.obj))
     else:
-      self.pwarning("please open file at first")
+      for e in args:
+        self.poutput("%s -> \n%s" % (e, obj_dumps(self.get_value(e))))
 
   def complete_print(self, text, line, begidx, endidx):
     """ completion für print """
@@ -154,27 +166,22 @@ class Obed(ObjWalk):
   def do_delete(self, args):
     """ delete elements fromd object """
     #self.poutput("print compl list: %s" % self.jsw.cl)
-    jcl=self.compl_list  
-    if self.jsw:
-      if not args:
-        self.pwarning("deleting whole object..")
-        jcl=self.jsw.delete_element()
-      else:
-        for e in args:
-          self.poutput("deleting element %s" % e)
-          jcl=self.jsw.delete_element(e)
-      self.compl_list=jcl  
+    if not args:
+      self.pwarning("deleting whole object..")
+      self.delete_element()
     else:
-      self.pwarning("please open file at first")
+      for e in args:
+        self.poutput("deleting element %s" % e)
+        self.delete_element(e)
 
   def complete_delete(self, text, line, begidx, endidx):
     """ completion für print """
     return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
 
   ###################### set_val ########################
-  set_parser=cmd2.Cmd2ArgumentParser()
-  set_parser.add_argument('elements', help='json element(s)', nargs='*', choices_provider=json_choice_provider)
-  set_parser.add_argument('-v', '--value', nargs=1, help='value of json element')
+  #set_parser=cmd2.Cmd2ArgumentParser()
+  #set_parser.add_argument('elements', help='json element(s)', nargs='*', choices_provider=json_choice_provider)
+  #set_parser.add_argument('-v', '--value', nargs=1, help='value of json element')
 
   
   @cmd2.with_argparser(set_parser)
@@ -184,15 +191,15 @@ class Obed(ObjWalk):
     if args.elements:
       for e in args.elements:
         self.poutput("setting element %s to %s" % (e, args.value[0]))
-        jcl=self.jsw.set_value(e,args.value[0])
+        self.set_value(e,args.value[0])
     else:
       self.poutput("setting whole object to %s" % (args.value[0]))
-      jcl=self.jsw.set_value("", args.value[0])
+      self.set_value("", args.value[0])
   
   ###################### append to list ########################
-  append_parser=cmd2.Cmd2ArgumentParser()
-  append_parser.add_argument('elements', help='json element(s). element should be list', nargs='*', choices_provider=json_choice_provider)
-  append_parser.add_argument('-v', '--values', nargs='+', help='append value')
+  #append_parser=cmd2.Cmd2ArgumentParser()
+  #append_parser.add_argument('elements', help='json element(s). element should be list', nargs='*', choices_provider=json_choice_provider)
+  #append_parser.add_argument('-v', '--values', nargs='+', help='append value')
 
   
   @cmd2.with_argparser(append_parser)
@@ -208,6 +215,7 @@ class Obed(ObjWalk):
       for value in args.values:
         self.poutput("append %s to whole object" % (value))
         self.append_value("", value)
+
 
 if __name__ == '__main__':
   c = Obed()
