@@ -107,10 +107,10 @@ class ObjWalk(cmd2.Cmd):
     return: -
     """
     if opath:
-      value=JsonWalk.convert_to_json(value)
+      value=convert_to_json(value)
     else:
       # also check if value is list or dict
-      value=JsonWalk.convert_to_json(value, True)
+      value=convert_to_json(value, True)
     obj,idx_or_key=self._prepare_obj_for_action(opath) 
     if opath:
       obj[idx_or_key]=value
@@ -122,7 +122,7 @@ class ObjWalk(cmd2.Cmd):
     """ append value to list in object
     described by opath
     """
-    value=JsonWalk.convert_to_json(value)
+    value=convert_to_json(value)
     if type(self._get_object_ref(opath)) != list:
       raise TypeError("object path is not a list")
     obj,idx_or_key=self._prepare_obj_for_action(opath)
@@ -180,6 +180,6 @@ class ObjWalk(cmd2.Cmd):
         else:
           l.append(f"{s}{k}")
     else:
-      print("ERROR: übergebenes objekt ist weder list noch dict")
+      self.pwarning("")
     return l
 

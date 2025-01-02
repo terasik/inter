@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "obed"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
   "cmd2",
   "jmespath"
@@ -24,3 +24,6 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/terasik/inter"
 Issues = "https://github.com/terasik/inter"
+
+[project.scripts]
+obed = "obed.obed:run"
