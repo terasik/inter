@@ -8,6 +8,7 @@ from copy import deepcopy
 from collections import deque
 import cmd2
 import jmespath
+from obed.utils import convert_to_json
 
 class ObjWalk(cmd2.Cmd):
   """ class to walk through (json,yaml) objects 
@@ -180,6 +181,7 @@ class ObjWalk(cmd2.Cmd):
         else:
           l.append(f"{s}{k}")
     else:
-      self.pwarning("")
+      #self.pwarning("")
+      pass
     return l
 

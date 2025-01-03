@@ -1,10 +1,11 @@
 
 #!/usr/bin/env python3
 import sys
+import re
 import os
 import cmd2
 from obed.objwalk import ObjWalk
-from obed.utils import obj_dumps, convert_to_json, load_json
+from obed.utils import obj_dumps, convert_to_json, load_json, dump_json
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
 
@@ -25,12 +26,14 @@ class Obed(ObjWalk, ObedArgParsers):
     super().__init__()
     self.prompt="> "
     self.wrk_file=None
+    self.changed=False
 
   def _reset(self):
     self.obj_hist.clear()
     #self.hcl=[]
     self.wrk_file=None
     self.obj=None
+    self.changed=False
 
   def hist_choice_provider(self):
     l=len(self.obj_hist)
@@ -59,6 +62,7 @@ class Obed(ObjWalk, ObedArgParsers):
     else:
       #self.wrk_file=s
       self.obj=js
+      self.changed=True
       #self.psuccess("json geladen")
     
   ############# open ##########################
@@ -72,7 +76,7 @@ class Obed(ObjWalk, ObedArgParsers):
     try:
       js=load_json(arg)
     except Exception as _exc:
-      self.perror("laden der json nicht möglich %s:" % _exc)
+      self.perror("not possible to load json file: %s" % _exc)
     else:
       self.wrk_file=arg
       self.obj=js
@@ -94,6 +98,7 @@ class Obed(ObjWalk, ObedArgParsers):
     else:
       self.poutput("saving to current working file")
       dump_json(self.obj, self.wrk_file)
+    self.changed=False
 
   def complete_save(self, text, line, begidx, endidx):
     """path completion for save/write"""
@@ -115,21 +120,24 @@ class Obed(ObjWalk, ObedArgParsers):
     return self.basic_complete(text, line, begidx, endidx, match_against=self.hist_choice_provider())
 
   ##################### close #####################
+  @open_at_first
   def do_close(self, arg):
     """ close editing json objects """
     #if len(self.obj_hist):
-    i=self.read_input("save object before closing? ", 
-                      completion_mode=cmd2.CompletionMode.CUSTOM, 
-                      choices=["yes", "no"])
-    if re.match("yes|ja|y|j", i, re.I):
-      i=self.read_input("saving object to: ", 
+    if self.changed:
+      i=self.read_input("save object before closing? ", 
                         completion_mode=cmd2.CompletionMode.CUSTOM, 
-                        completer=cmd2.Cmd.path_complete)
-      self.do_save(i)
+                        choices=["yes", "no"])
+      if re.match("yes|ja|y|j", i, re.I):
+        i=self.read_input("saving object to: ", 
+                          completion_mode=cmd2.CompletionMode.CUSTOM, 
+                          completer=cmd2.Cmd.path_complete)
+        self.do_save(i)
     self._reset()
 
   ##################### print #####################
   @cmd2.with_argument_list
+  @open_at_first
   def do_print(self, args):
     """ zeige geladenes json """
     #self.poutput("print compl list: %s" % self.jsw.cl)
@@ -145,6 +153,7 @@ class Obed(ObjWalk, ObedArgParsers):
 
   ##################### delete #####################
   @cmd2.with_argument_list
+  @open_at_first
   def do_delete(self, args):
     """ delete elements fromd object """
     #self.poutput("print compl list: %s" % self.jsw.cl)
@@ -155,18 +164,16 @@ class Obed(ObjWalk, ObedArgParsers):
       for e in args:
         self.poutput("deleting element %s" % e)
         self.delete_element(e)
-
+    self.changed=True
+    
   def complete_delete(self, text, line, begidx, endidx):
     """ completion für print """
     return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
 
   ###################### set_val ########################
-  #set_parser=cmd2.Cmd2ArgumentParser()
-  #set_parser.add_argument('elements', help='json element(s)', nargs='*', choices_provider=json_choice_provider)
-  #set_parser.add_argument('-v', '--value', nargs=1, help='value of json element')
-
   
   @cmd2.with_argparser(ObedArgParsers.set_parser)
+  @open_at_first
   def do_set_val(self, args):
     """ set value of json element """
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
@@ -177,14 +184,12 @@ class Obed(ObjWalk, ObedArgParsers):
     else:
       self.poutput("setting whole object to %s" % (args.value[0]))
       self.set_value("", args.value[0])
+    self.changed=True
   
   ###################### append to list ########################
-  #append_parser=cmd2.Cmd2ArgumentParser()
-  #append_parser.add_argument('elements', help='json element(s). element should be list', nargs='*', choices_provider=json_choice_provider)
-  #append_parser.add_argument('-v', '--values', nargs='+', help='append value')
-
   
   @cmd2.with_argparser(ObedArgParsers.append_parser)
+  @open_at_first
   def do_append(self, args):
     """ set value of json element """
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
@@ -197,6 +202,10 @@ class Obed(ObjWalk, ObedArgParsers):
       for value in args.values:
         self.poutput("append %s to whole object" % (value))
         self.append_value("", value)
+    self.changed=True
+
+
+
 
 def run():
   c = Obed()

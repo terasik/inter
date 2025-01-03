@@ -1,0 +1,3 @@
+# siple cmd2 script
+new '{"abra": "kadabra", "qwe": [1,334, "gt"]}'
+print
