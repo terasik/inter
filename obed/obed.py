@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 import sys
 import re
@@ -39,7 +38,7 @@ class Obed(ObjWalk, ObedArgParsers):
     l=len(self.obj_hist)
     return [str(x) for x in range(l)]
 
-  def json_choice_provider(self):
+  def object_choice_provider(self):
     return self.compl_list
 
   def warn(self, warn_msg=""):
@@ -171,12 +170,10 @@ class Obed(ObjWalk, ObedArgParsers):
     return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
 
   ###################### set_val ########################
-  
-  @cmd2.with_argparser(ObedArgParsers.set_parser)
+
   @open_at_first
-  def do_set_val(self, args):
-    """ set value of json element """
-    #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
+  def _set_val(self, args):
+    """ append value of object element """
     if args.elements:
       for e in args.elements:
         self.poutput("setting element %s to %s" % (e, args.value[0]))
@@ -185,14 +182,18 @@ class Obed(ObjWalk, ObedArgParsers):
       self.poutput("setting whole object to %s" % (args.value[0]))
       self.set_value("", args.value[0])
     self.changed=True
+
+  @cmd2.with_argparser(ObedArgParsers.set_parser)
+  def do_set_val(self, args):
+    """ set value of object element """
+    #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
+    self._set_val(args)
   
   ###################### append to list ########################
-  
-  @cmd2.with_argparser(ObedArgParsers.append_parser)
+
   @open_at_first
-  def do_append(self, args):
-    """ set value of json element """
-    #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
+  def _append(self, args):
+    """ append value of object element """
     if args.elements:
       for ele in args.elements:
         for value in args.values:
@@ -203,8 +204,31 @@ class Obed(ObjWalk, ObedArgParsers):
         self.poutput("append %s to whole object" % (value))
         self.append_value("", value)
     self.changed=True
+  
+  @cmd2.with_argparser(ObedArgParsers.append_parser)
+  def do_append(self, args):
+    """ append value of object element """
+    #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
+    self._append(args)
 
+  ###################### copy elements ########################
 
+  @open_at_first
+  def _copy(self, args):
+    """ copy obj elements to other obj elements  """
+    for ele in args.elements:
+      for dest in args.dest:
+        self.poutput("copy element %s to dest %s" % (ele, dest))
+        self.copy_element(ele, dest)
+    self.changed=True
+
+  @cmd2.with_argparser(ObedArgParsers.copy_parser)
+  def do_copy(self, args):
+    """ copy obj elements to other obj elements  """
+    #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
+    #if not args.dest:
+    #  args.dest=[""]
+    self._copy(args)
 
 
 def run():

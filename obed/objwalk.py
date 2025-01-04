@@ -99,6 +99,26 @@ class ObjWalk(cmd2.Cmd):
     r=self._prepare_obj_for_action(opath, True)
     return r[0]
 
+  def copy_element(self, ele, dest=""):
+    """ copy object element to dest. if dest is empty,
+    copy element to root of the object
+
+    { "a": "kaidan", "b": "...."}
+    copy a -d b
+    { "a": "kaidan", "b": {"a": "kaidan"}}
+
+    {"b": [8,"jhg"], "c": [34, "erd"]}
+    copy b[1] -d c
+    {"b": [8,"jhg"], "c": "jhg"}
+    copy b -d c[0]
+    {"b": [8,"jhg"], "c": [{"b":}
+ 
+    """
+    obj_ele,idx_or_key_ele=self._prepare_obj_for_action(ele) 
+    obj_dest,idx_or_key_dest=self._prepare_obj_for_action(dest) 
+    self.poutput("ele : obj=%s idx_or_key=%s" % (obj_ele, idx_or_key_ele))
+    self.poutput("dest: obj=%s idx_or_key=%s" % (obj_dest, idx_or_key_dest))
+
 
   def set_value(self, opath ="", value=None):
     """ setting value of object or object element
