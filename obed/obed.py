@@ -120,7 +120,7 @@ class Obed(ObjWalk, ObedArgParsers):
 
   ##################### close #####################
   @open_at_first
-  def do_close(self, arg):
+  def _close(self, args):
     """ close editing json objects """
     #if len(self.obj_hist):
     if self.changed:
@@ -133,6 +133,12 @@ class Obed(ObjWalk, ObedArgParsers):
                           completer=cmd2.Cmd.path_complete)
         self.do_save(i)
     self._reset()
+
+  @cmd2.with_argparser(ObedArgParsers.close_parser)
+  def do_close(self, args):
+    """ close editing json objects """
+    self.poutput("close args %s" % args)
+    self._close(self, args)
 
   ##################### print #####################
   @cmd2.with_argument_list

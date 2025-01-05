@@ -118,6 +118,28 @@ class ObjWalk(cmd2.Cmd):
     obj_dest,idx_or_key_dest=self._prepare_obj_for_action(dest) 
     self.poutput("ele : obj=%s idx_or_key=%s" % (obj_ele, idx_or_key_ele))
     self.poutput("dest: obj=%s idx_or_key=%s" % (obj_dest, idx_or_key_dest))
+    obj_src_dc=deepcopy(obj_ele[idx_or_key_ele])
+    if dest:
+      if not isinstance(obj_dest[idx_or_key_dest], (list, dict)):
+        self.poutput("dest type is not list,dict. setting")
+        obj_dest[idx_or_key_dest]=obj_src_dc
+      elif isinstance(obj_dest[idx_or_key_dest], (list)):
+        self.poutput("dest type is list. appending")
+        obj_dest[idx_or_key_dest].append(obj_src_dc)
+      elif isinstance(obj_dest[idx_or_key_dest], (dict)):
+        if isinstance(obj_ele[idx_or_key_ele], (dict)):
+          self.poutput("dest and src type is dict. updating")
+          obj_dest[idx_or_key_dest].update(obj_src_dc)
+        else:
+          self.poutput("dest type is dict. src type is not dict. setting")
+          obj_dest[idx_or_key_dest]=obj_src_dc
+      else:
+        self.perror("unknown dest type. copy not possible")
+    else:
+      self.pwarning("copy to root of object not implemeted yet")
+    self.build_completion_list()
+          
+          
 
 
   def set_value(self, opath ="", value=None):
