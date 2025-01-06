@@ -140,8 +140,6 @@ class ObjWalk(cmd2.Cmd):
     self.build_completion_list()
           
           
-
-
   def set_value(self, opath ="", value=None):
     """ setting value of object or object element
     params:
@@ -160,6 +158,7 @@ class ObjWalk(cmd2.Cmd):
       self.build_completion_list()
     else:
       self.obj=value
+
 
   def append_value(self, opath="", value=None):
     """ append value to list in object

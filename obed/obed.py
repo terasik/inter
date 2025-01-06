@@ -191,7 +191,13 @@ class Obed(ObjWalk, ObedArgParsers):
     if args.elements:
       for e in args.elements:
         self.poutput("setting element %s to %s" % (e, args.value[0]))
-        self.set_value(e,args.value[0])
+        if args.value:
+          self.set_value(e,args.value[0])
+        elif args.take_from:
+          value=self.get_value(args.take_from[0])
+          self.set_value(e,value)
+        else:
+          self.perror("please provide value")
     else:
       self.poutput("setting whole object to %s" % (args.value[0]))
       self.set_value("", args.value[0])
