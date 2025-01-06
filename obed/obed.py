@@ -109,10 +109,12 @@ class Obed(ObjWalk, ObedArgParsers):
     """ show hist entries """
     if args:
       for c in args:
-        self.poutput("hist Nr. %s:\n%s" % (c, obj_dumps(self.obj_hist[int(c)])))
+        self.poutput(cmd2.ansi.style("hist Nr. %s -> "%c, fg=cmd2.Fg["LIGHT_BLUE"] ))
+        self.poutput("%s" % obj_dumps(self.obj_hist[int(c)]))
     else: 
       for c,e in enumerate(self.obj_hist):
-        self.poutput("hist Nr. %s:\n%s" % (c, obj_dumps(e)))
+        self.poutput(cmd2.ansi.style("hist Nr. %s -> "%c, fg=cmd2.Fg["LIGHT_BLUE"] ))
+        self.poutput("%s" % obj_dumps(e))
 
   def complete_showhist(self, text, line, begidx, endidx):
     """ completion für print """
@@ -123,7 +125,7 @@ class Obed(ObjWalk, ObedArgParsers):
   def _close(self, args):
     """ close editing json objects """
     #if len(self.obj_hist):
-    if self.changed:
+    if self.changed and not args.no_save:
       i=self.read_input("save object before closing? ", 
                         completion_mode=cmd2.CompletionMode.CUSTOM, 
                         choices=["yes", "no"])
@@ -132,13 +134,18 @@ class Obed(ObjWalk, ObedArgParsers):
                           completion_mode=cmd2.CompletionMode.CUSTOM, 
                           completer=cmd2.Cmd.path_complete)
         self.do_save(i)
+      elif re.match("no|nein|n", i, re.I):
+        self.poutput("don't saving any changes")
+      else:
+        self.perror("ambiguously answer. please call close again")
+        return 
     self._reset()
 
   @cmd2.with_argparser(ObedArgParsers.close_parser)
   def do_close(self, args):
     """ close editing json objects """
-    self.poutput("close args %s" % args)
-    self._close(self, args)
+    #self.poutput("close args %s" % args)
+    self._close( args)
 
   ##################### print #####################
   @cmd2.with_argument_list
@@ -150,7 +157,8 @@ class Obed(ObjWalk, ObedArgParsers):
       self.poutput(obj_dumps(self.obj))
     else:
       for e in args:
-        self.poutput("%s -> \n%s" % (e, obj_dumps(self.get_value(e))))
+        self.poutput(cmd2.ansi.style("%s -> "%e, fg=cmd2.Fg["LIGHT_BLUE"] ))
+        self.poutput("%s" % obj_dumps(self.get_value(e)))
 
   def complete_print(self, text, line, begidx, endidx):
     """ completion für print """
