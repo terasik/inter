@@ -13,7 +13,7 @@ class ObedArgParsers:
   set_group=set_parser.add_mutually_exclusive_group(required=True)
   set_parser.add_argument('elements', help='object element(s) which will be set', nargs='*', choices_provider=object_choice_provider)
   set_group.add_argument('-v', '--value', nargs=1, help='value of object element')
-  set_group.add_argument('-t', '--take-from', nargs=1, help='take value from another object element', choices_provider=object_choice_provide, choices_provider=object_choice_providerr)
+  set_group.add_argument('-t', '--take-from', nargs=1, help='take value from another object element', choices_provider=object_choice_provider)
 
   #
   append_parser=cmd2.Cmd2ArgumentParser()

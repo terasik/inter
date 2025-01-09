@@ -24,9 +24,9 @@ def convert_to_json(value, check_type=False, raise_error=False):
     raise_error=True
   try:
     js=json.loads(value)
-  except json.JSONDecodeError as exc:
+  except (json.JSONDecodeError, TypeError) as exc:
     if raise_error:
-      raise TypeError("json error: %s" % exc)
+      raise ValueError("json error: %s" % exc)
     return value
   if check_type and not isinstance(js, (list,dict)):
     raise TypeError("json is not dict or list")

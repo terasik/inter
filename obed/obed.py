@@ -187,24 +187,23 @@ class Obed(ObjWalk, ObedArgParsers):
 
   @open_at_first
   def _set_val(self, args):
-    """ append value of object element """
+    """ set value of object element """
+    if args.value:
+      value=args.value[0]
+    elif args.take_from:
+      value=self.get_value(args.take_from[0])
+    else:
+      self.perror("please provide value")
+
     if args.elements:
       for e in args.elements:
-        self.poutput("setting element %s to %s" % (e, args.value[0]))
-        if args.value:
-          self.set_value(e,args.value[0])
-        elif args.take_from:
-          value=self.get_value(args.take_from[0])
-          self.set_value(e,value)
-        else:
-          self.perror("please provide value")
+        self.set_value(e,value)
     else:
-      self.poutput("setting whole object to %s" % (args.value[0]))
-      self.set_value("", args.value[0])
+      self.set_value("", value)
     self.changed=True
 
   @cmd2.with_argparser(ObedArgParsers.set_parser)
-  def do_set_val(self, args):
+  def do_setval(self, args):
     """ set value of object element """
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
     self._set_val(args)
