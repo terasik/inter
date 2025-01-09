@@ -99,44 +99,32 @@ class ObjWalk(cmd2.Cmd):
     r=self._prepare_obj_for_action(opath, True)
     return r[0]
 
-  def copy_element(self, ele, dest=""):
-    """ copy object element to dest. if dest is empty,
-    copy element to root of the object
-
-    { "a": "kaidan", "b": "...."}
-    copy a -d b
-    { "a": "kaidan", "b": {"a": "kaidan"}}
-
-    {"b": [8,"jhg"], "c": [34, "erd"]}
-    copy b[1] -d c
-    {"b": [8,"jhg"], "c": "jhg"}
-    copy b -d c[0]
-    {"b": [8,"jhg"], "c": [{"b":}
- 
+  def copy_element(self, ele, dest):
+    """ copy object element to dest.
     """
     obj_ele,idx_or_key_ele=self._prepare_obj_for_action(ele) 
     obj_dest,idx_or_key_dest=self._prepare_obj_for_action(dest) 
-    self.poutput("ele : obj=%s idx_or_key=%s" % (obj_ele, idx_or_key_ele))
-    self.poutput("dest: obj=%s idx_or_key=%s" % (obj_dest, idx_or_key_dest))
+    #self.poutput("ele : obj=%s idx_or_key=%s" % (obj_ele, idx_or_key_ele))
+    #self.poutput("dest: obj=%s idx_or_key=%s" % (obj_dest, idx_or_key_dest))
     obj_src_dc=deepcopy(obj_ele[idx_or_key_ele])
     if dest:
       if not isinstance(obj_dest[idx_or_key_dest], (list, dict)):
-        self.poutput("dest type is not list,dict. setting")
+        #self.poutput("dest type is not list,dict. setting")
         obj_dest[idx_or_key_dest]=obj_src_dc
       elif isinstance(obj_dest[idx_or_key_dest], (list)):
-        self.poutput("dest type is list. appending")
+        #self.poutput("dest type is list. appending")
         obj_dest[idx_or_key_dest].append(obj_src_dc)
       elif isinstance(obj_dest[idx_or_key_dest], (dict)):
         if isinstance(obj_ele[idx_or_key_ele], (dict)):
-          self.poutput("dest and src type is dict. updating")
+          #self.poutput("dest and src type is dict. updating")
           obj_dest[idx_or_key_dest].update(obj_src_dc)
         else:
-          self.poutput("dest type is dict. src type is not dict. setting")
+          #self.poutput("dest type is dict. src type is not dict. setting")
           obj_dest[idx_or_key_dest]=obj_src_dc
       else:
         self.perror("unknown dest type. copy not possible")
     else:
-      self.pwarning("copy to root of object not implemeted yet")
+      self.pwarning("copy to root of object not implemeted yet. please use 'setval' or 'append'")
     self.build_completion_list()
           
           

@@ -183,21 +183,17 @@ class Obed(ObjWalk, ObedArgParsers):
     """ completion für print """
     return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
 
+
   ###################### set_val ########################
+    
 
   @open_at_first
   def _set_val(self, args):
     """ set value of object element """
-    if args.value:
-      value=args.value[0]
-    elif args.take_from:
-      value=self.get_value(args.take_from[0])
-    else:
-      self.perror("please provide value")
-
+    value=self.get_args_value(args)
     if args.elements:
-      for e in args.elements:
-        self.set_value(e,value)
+      for ele in args.elements:
+        self.set_value(ele,value)
     else:
       self.set_value("", value)
     self.changed=True
@@ -213,14 +209,13 @@ class Obed(ObjWalk, ObedArgParsers):
   @open_at_first
   def _append(self, args):
     """ append value of object element """
+    values=self.get_args_values(args)
     if args.elements:
       for ele in args.elements:
-        for value in args.values:
-          self.poutput("append %s to element %s" % (value, ele))
+        for value in values:
           self.append_value(ele, value)
     else:
-      for value in args.values:
-        self.poutput("append %s to whole object" % (value))
+      for value in values:
         self.append_value("", value)
     self.changed=True
   
@@ -237,7 +232,7 @@ class Obed(ObjWalk, ObedArgParsers):
     """ copy obj elements to other obj elements  """
     for ele in args.elements:
       for dest in args.dest:
-        self.poutput("copy element %s to dest %s" % (ele, dest))
+        #self.poutput("copy element %s to dest %s" % (ele, dest))
         self.copy_element(ele, dest)
     self.changed=True
 
