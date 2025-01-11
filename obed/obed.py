@@ -8,7 +8,7 @@ from obed.utils import obj_dumps, convert_to_json, load_json, dump_json
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
 
-class Obed(ObjWalk, ObedArgParsers):
+class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
   """ handle json/yaml interactive
   cmd list:
