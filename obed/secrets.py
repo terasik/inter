@@ -20,7 +20,7 @@ vault_id_regex=r'[a-zA-Z_0-9]+'
 
 class ObedVault():
   """ vault password """
-
+  
   def vault_choice_provider(self):
     return [k for k,v in self.vault_data.items()]
 
@@ -36,27 +36,80 @@ class ObedVault():
   vault_group.add_argument('-r', '--read', 
                           help='read vault ids and passwds from stdin', 
                           action='store_true')
-  vault_group.add_argument('-l', '-f', '--load-file', 
-                          help='read vault ids aand passwds from file. file format: vault-id-1;passwort-1 ', 
+  vault_group.add_argument('-l', '--load-file', 
+                          help='read vault ids aand passwds from file. file format: vault-id=password', 
                           nargs=1,
                           completer=cmd2.Cmd.path_complete)
 
-  
+  def vault_id_print(self, vault_ids=[]):
+    """ print vault ids
+    if no vault_ids provided print 
+    everything
+    """
+    if vault_ids:
+      for vid in vault_ids:
+        self.poutput("vault_id=%s, password=%s" % (vid, self.vault_data[vid]))
+    else:
+      for vid,pwd self.vault_data.items():
+        self.poutput("vault_id=%s, password=%s" % (vid,pwd))
 
-  @classmethod
-  def read_passwd(cls):
-    """ setzt passwd variable in
-    abhängigkeit von vault-ids """
-    logging.debug("ermittelte vault-id liste aus hostvars: %s", cls.vault_id)
-    try:
-      logging.debug("versuche vault passwort datei zu laden")
-      from .mysecret import vault_passwd
-      cls.passwd=vault_passwd
-    except:
-      logging.debug("abfrage der vault passwörter startet")
-      for _vault_id in cls.vault_id:
-        p=getpass(f"vault password ({_vault_id}): ")
-        cls.passwd.update({_vault_id:p})
+  def ask_vault_id_passwd(self, vault_id, try_cnt=3):
+    """ function that read vault_id from stdin
+    """
+    for _ in range(try_cnt):
+      p=getpass("password for vault_id=%s: " % vault_id):
+      p=p.strip()
+      if not p:
+        self.pwarning("invalid or empty password")
+        continue
+      return p
+    raise ValueError("invalid or empty password provided")
+      
+    
+
+  def vault_id_read(self, args):
+    """ read passwords from stdin
+    if no vault_ids provided ask also for vault_id names
+    """
+    # if vault_ids was provided
+    if args.vault_ids:
+      for vid in args.vault_ids:
+        # if vvault id already exists in vault_data
+        if vid in self.vault_choice_provider():
+          # if vault_id already exists and has passwd
+          if self.vault_data[vid]:
+            self.poutput("vault_id=%s alread exists with password=%s" % (vid, self.vault_data[vid]))
+            i=self.read_input("change password for vault_id=%s? " % vid,
+                              completion_mode=cmd2.CompletionMode.CUSTOM,
+                              choices=["yes", "no"])
+            if re.match("yes|ja|y|j", i, re.I): 
+              self.vault_data[vid]=self.ask_vault_id_passwd(vid)
+          # vault_id exists but without password
+          else:
+            self.poutput("vault_id=%s already exists, but without password" % (vid, self.vault_data[vid]))
+            self.vault_data[vid]=self.ask_vault_id_passwd(vid)
+            
+              
+              
+            
+
+  def handle_vault_ids(self, args):
+    """ get vault ids from args (argpraser)
+    if -r option is provided read password from stdin
+    if -l option provided load file
+    if no of both options, set only vault_ids
+    """
+    if args.read:
+      self.vault_id_read(args)
+
+
+  @cmd2.with_argparser(vault_parser)
+  def do_vault(self, args):
+    """ handling of vault data
+    """
+    self.poutput("vault args: %s" % (args))
+    
+    
 
   
 

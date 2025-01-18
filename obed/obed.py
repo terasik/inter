@@ -7,6 +7,7 @@ from obed.objwalk import ObjWalk
 from obed.utils import obj_dumps, convert_to_json, load_json, dump_json
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
+from obed.secrets import ObedVault
 
 class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
@@ -26,6 +27,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.prompt="> "
     self.wrk_file=None
     self.changed=False
+    self.vault_data={}
 
   def _reset(self):
     self.obj_hist.clear()
