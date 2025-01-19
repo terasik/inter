@@ -20,13 +20,16 @@ class ObedVault():
   """ vault password """
   
   def vault_choice_provider(self):
+    """ return list with known vault ids
+    """
     return [k for k,v in self.vault_data.items()]
 
   vault_parser=cmd2.Cmd2ArgumentParser()
   vault_group=vault_parser.add_mutually_exclusive_group()
   vault_parser.add_argument('vault_ids', 
                           help='vault ids. should match this regex %s' % vault_id_rgx, 
-                          nargs='*')
+                          nargs='*',
+                          choices_provider=vault_choice_provider)
   vault_parser.add_argument('-p', '--print', 
                           help='print vault ids and passwords', 
                           nargs='*',
@@ -127,7 +130,36 @@ class ObedVault():
 
 
   def vault_data_load_file(self, args):
-    self.poutput("loading vault data file")
+    """ loading vault id file with format
+    # comment
+    vault_id = password
+    ...
+    vault_id_N = password_N
+    """
+    #self.poutput("loading vault data file")
+    with open(args.load_file[0]) as f:
+      lines=f.readlines()
+    for cnt,line in enumerate(lines):
+      line=line.strip()
+      # empty line
+      if not line:
+        #self.poutput("  line %s -> empty" % cnt)
+        continue
+      #  comments
+      if re.search(r'^\s*[#;]', line):
+        #self.poutput("  line %s -> comment" % cnt)
+        continue
+      #r=re.match('^\s*(?P<vault_id>'+vault_id_rgx+')\s*=?\s*(?P<passwd>[^\s"\']+)?')
+      r=re.match('^\s*(?P<vault_id>'+vault_id_rgx+')\s*(=\s*(?P<passwd>[^\s"\']+))?\s*$', line)
+      if r:
+        vid=r.group("vault_id")
+        passwd=r.group("passwd")
+        #self.poutput(" line %s -> ok vid=%s password=%s" % (cnt, vid, passwd))
+        if vid in self.vault_data:
+          self.pwarning("overwrite vault id %s" % vid) 
+        self.vault_data.update({vid: passwd})
+      else:
+        self.pwarning("ignoring line %s (%s)" %(cnt,line))
 
 
   def handle_vault_ids_args(self, args):
@@ -139,7 +171,7 @@ class ObedVault():
     if args.read:
       self.vault_data_read(args)
     elif args.load_file:
-      self.vault_data_load_fle(args)
+      self.vault_data_load_file(args)
     else:
       for vid in args.vault_ids:
         self.check_and_set_vault_data(vid, False)
@@ -149,10 +181,10 @@ class ObedVault():
   def do_vault(self, args):
     """ handling of vault data
     """
-    self.poutput("vault args: %s" % (args))
+    #self.poutput("vault args: %s" % (args))
     self.handle_vault_ids_args(args)
-    if args.print:
-      self.vault_data_print(args.vault_ids)
+    if args.print is not None: 
+      self.vault_data_print(args.print)
     
     
 
