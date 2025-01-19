@@ -49,7 +49,7 @@ class ObedVault():
       for vid in vault_ids:
         self.poutput("vault_id=%s, password=%s" % (vid, self.vault_data[vid]))
     else:
-      for vid,pwd self.vault_data.items():
+      for vid,pwd in self.vault_data.items():
         self.poutput("vault_id=%s, password=%s" % (vid,pwd))
 
 
@@ -57,7 +57,7 @@ class ObedVault():
     """ function that read vault_id(vid) from stdin
     """
     for _ in range(try_cnt):
-      p=getpass("password for vault_id=%s: " % vid):
+      p=getpass("password for vault_id=%s: " % vid)
       p=p.strip()
       if not p:
         self.pwarning("invalid or empty password")
@@ -83,16 +83,17 @@ class ObedVault():
             self.vault_data[vid]=self.ask_vault_id_passwd(vid)
       # vault_id exists but without password
       else:
-        self.poutput("vault_id=%s already exists, but without password" % (vid, self.vault_data[vid]))
+        self.poutput("vault_id=%s already exists, but without password" % (vid))
         if ask_for_passwd:
           self.vault_data[vid]=self.ask_vault_id_passwd(vid)
     # if vault id not in vault data
     else:
-      self.poutput("vault_id=%s doen't exits. provide password" % vid)
       #self.vault_data[vid]=self.ask_vault_id_passwd(vid)
       if ask_for_passwd:
+        self.poutput("vault_id=%s doen't exits. provide password" % vid)
         p=self.ask_vault_id_passwd(vid)
       else:
+        self.poutput("adding vault_id=%s without password" % vid)
         p=""
       self.vault_data.update({vid: p})
 
