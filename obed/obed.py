@@ -2,12 +2,14 @@
 import sys
 import re
 import os
+import yaml
 import cmd2
 from obed.objwalk import ObjWalk
 from obed.utils import obj_dumps, convert_to_json, load_json, dump_json
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
 from obed.secrets import ObedVault
+from obed.yavault import get_loader,get_dumper
 
 class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
@@ -245,6 +247,21 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     #if not args.dest:
     #  args.dest=[""]
     self._copy(args)
+
+  ###################### copy elements ########################
+  @close_at_first
+  def _open_yaml(self, args):
+    with open(args.yaml_file[0]) as f:
+      y=yaml.load(f, Loader=get_loader())
+    self.wrk_file=args.yaml_file[0]
+    self.obj=y
+
+    
+
+  @cmd2.with_argparser(ObedArgParsers.open_parser)
+  def do_open_yaml(self, args):
+    """ open yaml file
+    """
 
 
 def run():

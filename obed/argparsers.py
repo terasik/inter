@@ -57,3 +57,10 @@ class ObedArgParsers:
   close_group.add_argument('-s', '--save', help='save before close', action='store_true')
   close_group.add_argument('-n', '--no-save', help='dont save before closing', action='store_true')
 
+  #
+  open_yaml_parser=cmd2.Cmd2ArgumentParser()
+  open_yaml_parser.add_argument('yaml_file',
+                          help='yaml file to load',
+                          nargs=1,
+                          completer=cmd2.Cmd.path_complete)
+
