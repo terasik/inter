@@ -3,6 +3,8 @@ modul with helper functions
 - loading, dumping json objects
 """
 import json
+import yaml
+from obed.yavault import get_dumper
 
 def convert_to_json(value, check_type=False, raise_error=False):
   """ try to convert value to json
@@ -44,7 +46,7 @@ def load_json(path):
     js=json.load(_fr)
   return js
 
-def obj_dumps(obj):
+def obj_dumps(obj, yaml_json="json"):
   """ return indentet json object
   as string. converting to ascii is disabled
 
@@ -53,7 +55,12 @@ def obj_dumps(obj):
   return: 
     s: str -> object as json string
   """
-  s=json.dumps(obj, indent=2, ensure_ascii=False)
+  if yaml_json=="json":
+    s=json.dumps(obj, indent=2, ensure_ascii=False)
+  elif yaml_json=="yaml":
+    s=yaml.dump(obj, Dumper=get_dumper())
+  else:
+    s=None
   return s
 
 def dump_json(obj, path):

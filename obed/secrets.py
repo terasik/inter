@@ -16,6 +16,12 @@ import cmd2
 vault_id_rgx=r'[a-zA-Z_0-9]+'
 vault_id_choices=(";break", ";stop")
 
+class VaultData:
+  """ class for vault password data
+  (vault_ids, passwords)
+  """
+  vault_data={}
+
 class ObedVault():
   """ vault password """
   

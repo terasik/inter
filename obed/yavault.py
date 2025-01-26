@@ -32,10 +32,16 @@ from ansible_vault import Vault
 class VaultError(Exception):
   """ Vault Error """
 
+class VaultData:
+  """ class for vault password data
+  (vault_ids, passwords)
+  """
+  vault_data={}
+
 class YamlVault:
   """ klasse für yaml vault tag """
   def __init__(self, **kwargs):
-    self._passwd=ObedVault._passwd
+    self._passwd=VaultData.vault_data
     self._vault_id=None
     # first line split von cipher text
     self.flsp=None
@@ -49,7 +55,7 @@ class YamlVault:
 
   def __repr__(self):
     """ wird für yaml dumper benötigt """
-    #return f"ObedVault(flsp={self.flsp}, vault_id={self._vault_id}, plain_text={self.decode()})"
+    #return f"YamlVault(flsp={self.flsp}, vault_id={self._vault_id}, plain_text={self.decode()})"
     return self.cipher_text
 
   def handle_vault_id(self, cipher_text):
@@ -127,7 +133,7 @@ class YamlVault:
 def vault_constructor(loader, node):
   """Construct a greeting."""
   #return f"_vault_ {loader.construct_scalar(node)}"
-  return ObedVault(cipher_text=loader.construct_scalar(node))
+  return YamlVault(cipher_text=loader.construct_scalar(node))
 
 def get_loader():
   """Add constructors to PyYAML loader."""
@@ -136,10 +142,11 @@ def get_loader():
   return loader
 
 def vault_representer(dumper, vault):
-  return dumper.represent_scalar("!vault", vault.cipher_text, style='|')
+  #return dumper.represent_scalar("!vault", vault.cipher_text, style='|')
+  return dumper.represent_scalar("!vault", vault.plain_text, style=None)
 
 def get_dumper():
   safe_dumper=yaml.SafeDumper
-  safe_dumper.add_representer(ObedVault, vault_representer)
+  safe_dumper.add_representer(YamlVault, vault_representer)
   return safe_dumper
 

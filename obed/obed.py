@@ -9,7 +9,7 @@ from obed.utils import obj_dumps, convert_to_json, load_json, dump_json
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
 from obed.secrets import ObedVault
-from obed.yavault import get_loader,get_dumper
+from obed.yavault import get_loader,get_dumper,VaultData
 
 class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
@@ -29,7 +29,8 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.prompt="> "
     self.wrk_file=None
     self.changed=False
-    self.vault_data={}
+    self.vault_data=VaultData.vault_data
+    self.yaml_json=None
 
   def _reset(self):
     self.obj_hist.clear()
@@ -37,6 +38,8 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.wrk_file=None
     self.obj=None
     self.changed=False
+    self.yaml_json=None  
+    
 
   def hist_choice_provider(self):
     l=len(self.obj_hist)
@@ -64,6 +67,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       self.perror("not possible to load argument as json obj: %s" % _exc)
     else:
       #self.wrk_file=s
+      self.yaml_json="json"
       self.obj=js
       self.changed=True
       #self.psuccess("json geladen")
@@ -81,6 +85,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     except Exception as _exc:
       self.perror("not possible to load json file: %s" % _exc)
     else:
+      self.yaml_json="json"
       self.wrk_file=arg
       self.obj=js
       #self.psuccess("json geladen")
@@ -158,11 +163,11 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     """ zeige geladenes json """
     #self.poutput("print compl list: %s" % self.jsw.cl)
     if not args:
-      self.poutput(obj_dumps(self.obj))
+      self.poutput(obj_dumps(self.obj, self.yaml_json))
     else:
       for e in args:
         self.poutput(cmd2.ansi.style("%s -> "%e, fg=cmd2.Fg["LIGHT_BLUE"] ))
-        self.poutput("%s" % obj_dumps(self.get_value(e)))
+        self.poutput("%s" % obj_dumps(self.get_value(e), self.yaml_json))
 
   def complete_print(self, text, line, begidx, endidx):
     """ completion für print """
@@ -253,15 +258,17 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
   def _open_yaml(self, args):
     with open(args.yaml_file[0]) as f:
       y=yaml.load(f, Loader=get_loader())
+    self.yaml_json="yaml"
     self.wrk_file=args.yaml_file[0]
     self.obj=y
 
     
 
-  @cmd2.with_argparser(ObedArgParsers.open_parser)
+  @cmd2.with_argparser(ObedArgParsers.open_yaml_parser)
   def do_open_yaml(self, args):
     """ open yaml file
     """
+    self._open_yaml(args)
 
 
 def run():
