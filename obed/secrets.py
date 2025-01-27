@@ -25,30 +25,6 @@ class VaultData:
 class ObedVault():
   """ vault password """
   
-  def vault_choice_provider(self):
-    """ return list with known vault ids
-    """
-    return [k for k,v in self.vault_data.items()]
-
-  vault_parser=cmd2.Cmd2ArgumentParser()
-  vault_group=vault_parser.add_mutually_exclusive_group()
-  vault_parser.add_argument('vault_ids', 
-                          help='vault ids. should match this regex %s' % vault_id_rgx, 
-                          nargs='*',
-                          choices_provider=vault_choice_provider)
-  vault_parser.add_argument('-p', '--print', 
-                          help='print vault ids and passwords', 
-                          nargs='*',
-                          choices_provider=vault_choice_provider)
-  vault_group.add_argument('-r', '--read', 
-                          help='read vault ids and passwds from stdin', 
-                          action='store_true')
-  vault_group.add_argument('-l', '--load-file', 
-                          help='read vault ids aand passwds from file. file format: vault-id=password', 
-                          nargs=1,
-                          completer=cmd2.Cmd.path_complete)
-
-
   def vault_data_print(self, vault_ids=[]):
     """ print vault ids
     if no vault_ids provided print 

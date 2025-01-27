@@ -5,11 +5,11 @@ import os
 import yaml
 import cmd2
 from obed.objwalk import ObjWalk
-from obed.utils import obj_dumps, convert_to_json, load_json, dump_json
+from obed.utils import obj_dumps, convert_to_json, load_json, dump_json, dump_yaml
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
 from obed.secrets import ObedVault
-from obed.yavault import get_loader,get_dumper,VaultData
+from obed.yavault import get_loader,VaultData
 
 class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
@@ -173,6 +173,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     """ completion für print """
     return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
 
+
   ##################### delete #####################
   @cmd2.with_argument_list
   @open_at_first
@@ -194,8 +195,6 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
 
   ###################### set_val ########################
-    
-
   @open_at_first
   def _set_val(self, args):
     """ set value of object element """
@@ -213,8 +212,9 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
     self._set_val(args)
   
-  ###################### append to list ########################
 
+
+  ###################### append to list ########################
   @open_at_first
   def _append(self, args):
     """ append value of object element """
@@ -253,7 +253,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     #  args.dest=[""]
     self._copy(args)
 
-  ###################### copy elements ########################
+  ###################### yaml ########################
   @close_at_first
   def _open_yaml(self, args):
     with open(args.yaml_file[0]) as f:
@@ -262,13 +262,28 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.wrk_file=args.yaml_file[0]
     self.obj=y
 
-    
-
   @cmd2.with_argparser(ObedArgParsers.open_yaml_parser)
   def do_open_yaml(self, args):
     """ open yaml file
     """
     self._open_yaml(args)
+
+  @open_at_first
+  def do_save_yaml(self, arg):
+    """ save yaml to file s
+    if s is not provided or empty,none
+    save to wrk_file """
+    if arg:
+      self.poutput("saving as yaml to %s" % arg)
+      dump_yaml(self.obj, arg)
+    else:
+      self.poutput("saving as yaml to current working file")
+      dump_yaml(self.obj, self.wrk_file)
+    self.changed=False
+
+  def complete_save_yaml(self, text, line, begidx, endidx):
+    """path completion for save/write of yaml"""
+    return self.path_complete(text, line, begidx, endidx)
 
 
 def run():

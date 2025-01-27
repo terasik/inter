@@ -141,12 +141,34 @@ def get_loader():
   loader.add_constructor("!vault", vault_constructor)
   return loader
 
+"""
 def vault_representer(dumper, vault):
   #return dumper.represent_scalar("!vault", vault.cipher_text, style='|')
-  return dumper.represent_scalar("!vault", vault.plain_text, style=None)
+  return dumper.represent_scalar("!vault", vault.plain_text)
+"""
 
+def vault_plain_representer(dumper, vault):
+  #return dumper.represent_scalar("!vault", vault.cipher_text, style='|')
+  return dumper.represent_scalar("!vault", vault.plain_text)
+
+def vault_cipher_representer(dumper, vault):
+  return dumper.represent_scalar("!vault", vault.cipher_text, style='|')
+
+"""
 def get_dumper():
   safe_dumper=yaml.SafeDumper
   safe_dumper.add_representer(YamlVault, vault_representer)
   return safe_dumper
+"""
+
+def get_plain_dumper():
+  safe_dumper=yaml.SafeDumper
+  safe_dumper.add_representer(YamlVault, vault_plain_representer)
+  return safe_dumper
+
+def get_cipher_dumper():
+  safe_dumper=yaml.SafeDumper
+  safe_dumper.add_representer(YamlVault, vault_cipher_representer)
+  return safe_dumper
+
 

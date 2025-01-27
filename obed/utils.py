@@ -4,7 +4,7 @@ modul with helper functions
 """
 import json
 import yaml
-from obed.yavault import get_dumper
+from obed.yavault import get_plain_dumper,get_cipher_dumper
 
 def convert_to_json(value, check_type=False, raise_error=False):
   """ try to convert value to json
@@ -58,7 +58,7 @@ def obj_dumps(obj, yaml_json="json"):
   if yaml_json=="json":
     s=json.dumps(obj, indent=2, ensure_ascii=False)
   elif yaml_json=="yaml":
-    s=yaml.dump(obj, Dumper=get_dumper())
+    s=yaml.dump(obj, Dumper=get_plain_dumper())
   else:
     s=None
   return s
@@ -72,4 +72,15 @@ def dump_json(obj, path):
   """
   with open(path, 'w') as _fw:
     json.dump(obj, _fw, indent=2, ensure_ascii=False)
+
+
+def dump_yaml(obj, path):
+  """ write obj to path as json
+  params:
+    obj: yaml -> yaml object to write
+    path: str -> path to file where obj will be written
+  return: -
+  """
+  with open(path, 'w') as _fw:
+    _fw.write(yaml.dump(obj, Dumper=get_cipher_dumper()))
 
