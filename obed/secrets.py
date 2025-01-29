@@ -13,6 +13,7 @@ import re
 from getpass import getpass
 import cmd2
 
+
 vault_id_rgx=r'[a-zA-Z_0-9]+'
 vault_id_choices=(";break", ";stop")
 
@@ -158,16 +159,6 @@ class ObedVault():
       for vid in args.vault_ids:
         self.check_and_set_vault_data(vid, False)
 
-
-  @cmd2.with_argparser(vault_parser)
-  def do_vault(self, args):
-    """ handling of vault data
-    """
-    #self.poutput("vault args: %s" % (args))
-    self.handle_vault_ids_args(args)
-    if args.print is not None: 
-      self.vault_data_print(args.print)
-    
     
 
   

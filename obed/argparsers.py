@@ -1,4 +1,5 @@
 import cmd2
+from obed.secrets import vault_id_rgx
 
 class ObedArgParsers:
   """ argparsers for obed cmds:

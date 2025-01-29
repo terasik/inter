@@ -166,6 +166,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       self.poutput(obj_dumps(self.obj, self.yaml_json))
     else:
       for e in args:
+        #self.poutput("get_value %s : %s" % (e, self.get_value(e)))
         self.poutput(cmd2.ansi.style("%s -> "%e, fg=cmd2.Fg["LIGHT_BLUE"] ))
         self.poutput("%s" % obj_dumps(self.get_value(e), self.yaml_json))
 
@@ -201,9 +202,9 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     value=self.get_args_value(args)
     if args.elements:
       for ele in args.elements:
-        self.set_value(ele,value)
+        self.set_value(ele,value, args.vault, args.vault_id)
     else:
-      self.set_value("", value)
+      self.set_value("", value, args.vault, args.vault_id)
     self.changed=True
 
   @cmd2.with_argparser(ObedArgParsers.set_parser)
@@ -252,6 +253,18 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     #if not args.dest:
     #  args.dest=[""]
     self._copy(args)
+
+
+  ###################### yaml ########################
+  @cmd2.with_argparser(ObedArgParsers.vault_parser)
+  def do_vault(self, args):
+    """ handling of vault data
+    """
+    #self.poutput("vault args: %s" % (args))
+    self.handle_vault_ids_args(args)
+    if args.print is not None:
+      self.vault_data_print(args.print)
+
 
   ###################### yaml ########################
   @close_at_first

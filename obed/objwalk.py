@@ -9,6 +9,7 @@ from collections import deque
 import cmd2
 import jmespath
 from obed.utils import convert_to_json
+from obed.yavault import YamlVault
 
 class ObjWalk(cmd2.Cmd):
   """ class to walk through (json,yaml) objects 
@@ -128,7 +129,7 @@ class ObjWalk(cmd2.Cmd):
     self.build_completion_list()
           
           
-  def set_value(self, opath ="", value=None):
+  def set_value(self, opath ="", value=None, vault=False, vault_id=""):
     """ setting value of object or object element
     params:
       opath: str  -> object element path string (Ex: 'a:b[0]')
@@ -136,8 +137,15 @@ class ObjWalk(cmd2.Cmd):
     return: -
     """
     if opath:
-      value=convert_to_json(value)
+      if not vault:
+        value=convert_to_json(value)
+      else:
+        if not vault_id:
+          raise ValueError("vault_id was not provided")
+        value=YamlVault(plain_text=value, vault_id=vault_id[0])
     else:
+      if vault:
+        raise ValueError("setting whole to vault value is not supported")
       # also check if value is list or dict
       value=convert_to_json(value, True)
     obj,idx_or_key=self._prepare_obj_for_action(opath) 

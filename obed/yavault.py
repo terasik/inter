@@ -127,6 +127,8 @@ class YamlVault:
     raise VaultError("mit keinem der passwörter hat entschlüsselung der vault daten funktioniert")
 
   def encode(self, plain_text):
+    print("self._passwd: %s" % self._passwd)
+    print("self._vault_id: %s" % self._vault_id)
     vault=Vault(self._passwd[self._vault_id])
     return vault.dump_raw(plain_text)
 
