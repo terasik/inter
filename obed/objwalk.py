@@ -127,9 +127,37 @@ class ObjWalk(cmd2.Cmd):
     else:
       self.pwarning("copy to root of object not implemeted yet. please use 'setval' or 'append'")
     self.build_completion_list()
+
+
+  def set_value_vault(self, opath, value, vault_id):
+    """ setting value as vault value
+    """
+    if not isinstance(value, (YamlVault)):
+      if not vault_id:
+        raise ValueError("vault_id not provided") 
+      value=YamlVault(plain_text=value, vault_id=vault_id[0])
+    obj,idx_or_key=self._prepare_obj_for_action(opath) 
+    obj[idx_or_key]=value
+    self.build_completion_list()
+
+  def append_value_vault(self, opath, value, vault_id):
+    """ appending vault values to list
+    """
+    if not isinstance(value, (YamlVault)):
+      if not vault_id:
+        raise ValueError("vault_id not provided") 
+      value=YamlVault(plain_text=value, vault_id=vault_id[0])
+    if type(self._get_object_ref(opath)) != list:
+      raise TypeError("object path is not a list. only appending to lists ist possible!")
+    obj,idx_or_key=self._prepare_obj_for_action(opath)
+    if opath:
+      obj[idx_or_key].append(value)
+    else:
+      self.obj.append(value)
+    self.build_completion_list()
           
           
-  def set_value(self, opath ="", value=None, vault=False, vault_id=""):
+  def set_value(self, opath ="", value=None):
     """ setting value of object or object element
     params:
       opath: str  -> object element path string (Ex: 'a:b[0]')
@@ -137,15 +165,8 @@ class ObjWalk(cmd2.Cmd):
     return: -
     """
     if opath:
-      if not vault:
-        value=convert_to_json(value)
-      else:
-        if not vault_id:
-          raise ValueError("vault_id was not provided")
-        value=YamlVault(plain_text=value, vault_id=vault_id[0])
+      value=convert_to_json(value)
     else:
-      if vault:
-        raise ValueError("setting whole to vault value is not supported")
       # also check if value is list or dict
       value=convert_to_json(value, True)
     obj,idx_or_key=self._prepare_obj_for_action(opath) 
@@ -162,7 +183,7 @@ class ObjWalk(cmd2.Cmd):
     """
     value=convert_to_json(value)
     if type(self._get_object_ref(opath)) != list:
-      raise TypeError("object path is not a list")
+      raise TypeError("object path is not a list. only appending to lists ist possible!")
     obj,idx_or_key=self._prepare_obj_for_action(opath)
     if opath:
       obj[idx_or_key].append(value)

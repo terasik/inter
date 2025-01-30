@@ -202,9 +202,9 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     value=self.get_args_value(args)
     if args.elements:
       for ele in args.elements:
-        self.set_value(ele,value, args.vault, args.vault_id)
+        self.set_value(ele,value)
     else:
-      self.set_value("", value, args.vault, args.vault_id)
+      self.set_value("", value)
     self.changed=True
 
   @cmd2.with_argparser(ObedArgParsers.set_parser)
@@ -214,6 +214,22 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self._set_val(args)
   
 
+  ###################### set_vault_val ########################
+  @open_at_first
+  def _set_val_vault(self, args):
+    """ set value of object element """
+    value=self.get_args_value(args)
+    #value=args.value[0]
+    for ele in args.elements:
+      self.set_value_vault(ele,value,args.vault_id)
+    self.changed=True
+
+  @cmd2.with_argparser(ObedArgParsers.set_vault_parser)
+  def do_setval_vault(self, args):
+    """ set value of object element as vault
+    """
+    #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
+    self._set_val_vault(args)
 
   ###################### append to list ########################
   @open_at_first
@@ -234,6 +250,27 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     """ append value of object element """
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
     self._append(args)
+
+  ###################### append vault to list ########################
+  @open_at_first
+  def _append_vault(self, args):
+    """ append vault value of object element """
+    #values=args.value
+    values=self.get_args_values(args)
+    if args.elements:
+      for ele in args.elements:
+        for value in values:
+          self.append_value_vault(ele, value, args.vault_id)
+    else:
+      for value in values:
+        self.append_value_vault("", value, args.vault_id)
+    self.changed=True
+  
+  @cmd2.with_argparser(ObedArgParsers.append_vault_parser)
+  def do_append_vault(self, args):
+    """ append vault value of object element """
+    #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
+    self._append_vault(args)
 
   ###################### copy elements ########################
 
