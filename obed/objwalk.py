@@ -9,6 +9,7 @@ from collections import deque
 import cmd2
 import jmespath
 from obed.utils import convert_to_json
+from obed.yavault import YamlVault
 
 class ObjWalk(cmd2.Cmd):
   """ class to walk through (json,yaml) objects 
@@ -126,6 +127,34 @@ class ObjWalk(cmd2.Cmd):
     else:
       self.pwarning("copy to root of object not implemeted yet. please use 'setval' or 'append'")
     self.build_completion_list()
+
+
+  def set_value_vault(self, opath, value, vault_id):
+    """ setting value as vault value
+    """
+    if not isinstance(value, (YamlVault)):
+      if not vault_id:
+        raise ValueError("vault_id not provided") 
+      value=YamlVault(plain_text=value, vault_id=vault_id[0])
+    obj,idx_or_key=self._prepare_obj_for_action(opath) 
+    obj[idx_or_key]=value
+    self.build_completion_list()
+
+  def append_value_vault(self, opath, value, vault_id):
+    """ appending vault values to list
+    """
+    if not isinstance(value, (YamlVault)):
+      if not vault_id:
+        raise ValueError("vault_id not provided") 
+      value=YamlVault(plain_text=value, vault_id=vault_id[0])
+    if type(self._get_object_ref(opath)) != list:
+      raise TypeError("object path is not a list. only appending to lists ist possible!")
+    obj,idx_or_key=self._prepare_obj_for_action(opath)
+    if opath:
+      obj[idx_or_key].append(value)
+    else:
+      self.obj.append(value)
+    self.build_completion_list()
           
           
   def set_value(self, opath ="", value=None):
@@ -154,7 +183,7 @@ class ObjWalk(cmd2.Cmd):
     """
     value=convert_to_json(value)
     if type(self._get_object_ref(opath)) != list:
-      raise TypeError("object path is not a list")
+      raise TypeError("object path is not a list. only appending to lists ist possible!")
     obj,idx_or_key=self._prepare_obj_for_action(opath)
     if opath:
       obj[idx_or_key].append(value)

@@ -3,6 +3,8 @@ modul with helper functions
 - loading, dumping json objects
 """
 import json
+import yaml
+from obed.yavault import get_plain_dumper,get_cipher_dumper
 
 def convert_to_json(value, check_type=False, raise_error=False):
   """ try to convert value to json
@@ -44,7 +46,7 @@ def load_json(path):
     js=json.load(_fr)
   return js
 
-def obj_dumps(obj):
+def obj_dumps(obj, obj_type="json"):
   """ return indentet json object
   as string. converting to ascii is disabled
 
@@ -53,7 +55,12 @@ def obj_dumps(obj):
   return: 
     s: str -> object as json string
   """
-  s=json.dumps(obj, indent=2, ensure_ascii=False)
+  if obj_type=="json":
+    s=json.dumps(obj, indent=2, ensure_ascii=False)
+  elif obj_type=="yaml":
+    s=yaml.dump(obj, Dumper=get_plain_dumper(), explicit_end=False, indent=2, default_style='')
+  else:
+    s=None
   return s
 
 def dump_json(obj, path):
@@ -65,4 +72,15 @@ def dump_json(obj, path):
   """
   with open(path, 'w') as _fw:
     json.dump(obj, _fw, indent=2, ensure_ascii=False)
+
+
+def dump_yaml(obj, path):
+  """ write obj to path as json
+  params:
+    obj: yaml -> yaml object to write
+    path: str -> path to file where obj will be written
+  return: -
+  """
+  with open(path, 'w') as _fw:
+    _fw.write(yaml.dump(obj, Dumper=get_cipher_dumper()))
 
