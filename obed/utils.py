@@ -46,7 +46,7 @@ def load_json(path):
     js=json.load(_fr)
   return js
 
-def obj_dumps(obj, yaml_json="json"):
+def obj_dumps(obj, obj_type="json"):
   """ return indentet json object
   as string. converting to ascii is disabled
 
@@ -55,9 +55,9 @@ def obj_dumps(obj, yaml_json="json"):
   return: 
     s: str -> object as json string
   """
-  if yaml_json=="json":
+  if obj_type=="json":
     s=json.dumps(obj, indent=2, ensure_ascii=False)
-  elif yaml_json=="yaml":
+  elif obj_type=="yaml":
     s=yaml.dump(obj, Dumper=get_plain_dumper(), explicit_end=False, indent=2, default_style='')
   else:
     s=None
