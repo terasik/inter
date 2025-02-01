@@ -27,6 +27,7 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
 - documentation
 - *version* cmd
 - some helpfull aliase like *exit*
+- restoring object from history with *restore* command
 
 ## examples/usage
 for next steps: 
@@ -68,7 +69,7 @@ open examples/example.yml
 ```
 ### printing objects/object elements
 command *print* can be used to show objects:
-```json
+```
 > print
 {
   "a": "searching",
@@ -162,7 +163,21 @@ a ->
 ```
 
 use *setval --help* for help
-
+it is possible to set one value to many elements. you can set also value to whole object. example:
+```
+> new '{"a": 23}'
+> print
+{
+  "a": 23
+}
+> setval -v '["trubadur", 65]'
+> print
+[
+  "trubadur",
+  65
+]
+>
+```
 ### appending values to lists
 
 command *append* make it possible to append new (*-v* or *--value* option) or existing (*-t* or *--take-from* option) elements to lists. example:
@@ -196,3 +211,95 @@ result:
   "d": 1
 }
 ```
+to append value from existing elemt use *-t* or *--take-from* option
+```
+append c -t b b:for
+```
+result:
+```
+> print c
+c -> 
+[
+  "man",
+  "bugi",
+  "wugi",
+  {
+    "for": "sugar sugar"
+  },
+  "sugar sugar"
+]
+```
+
+with *append* you can append one or more values to one or more object elements. if whole object is a list, you can append also to whole object values. example
+```
+> new []
+> append -v where are you?
+> print
+[
+  "where",
+  "are",
+  "you?"
+]
+>
+```
+### copy elements 
+*copy* command can  copy value of one elemet to another element. notice: *copy* perform a deepcopy of values. general usage:
+```
+copy VALUE_OF_ELEMENT_1 ...  VALUE_OF_ELEMENT_N --dest ELEMENT_1 ... ELEMENT_N
+```
+*copy* allows you to copy one or more element values to anothor elements. example:
+```
+> copy d -d a:she:again c[2]
+> print
+{
+  "a": {
+    "she": {
+      "lost": [
+        "control",
+        1,
+        "bugi",
+        "wugi"
+      ],
+      "again": 1,
+      "get": "nothing"
+    }
+  },
+  "b": {
+    "for": "sugar sugar"
+  },
+  "c": [
+    "man",
+    "bugi",
+    1,
+    {
+      "for": "sugar sugar"
+    },
+    "sugar sugar"
+  ],
+  "d": 1
+}
+```
+tab completion works for *copy*
+### delete elements
+with *delete* you can delete object elements. example:
+```
+> delete a:she d
+> print
+{
+  "a": {},
+  "b": {
+    "for": "sugar sugar"
+  },
+  "c": [
+    "man",
+    "bugi",
+    1,
+    {
+      "for": "sugar sugar"
+    },
+    "sugar sugar"
+  ]
+}
+```
+tab completion works for *delete*
+
