@@ -51,6 +51,16 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
   def warn(self, warn_msg=""):
     self.pwarning(warn_msg)
 
+  ############# version ##########################
+  def do_version(self, _):
+    """ show version of obed package
+    usage:
+      version
+    """
+    from importlib.metadata import version
+    self.poutput(version('obed'))
+
+
 
   ############# new ##########################
   @cmd2.with_argument_list
