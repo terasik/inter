@@ -161,6 +161,11 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
   ##################### close #####################
   @open_at_first
+  def _close_with_deco(self, args):
+    """ wrapper for close with decorator
+    """
+    self._close(args)
+
   def _close(self, args):
     """ close editing json objects """
     #if len(self.obj_hist):
@@ -187,8 +192,21 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
   def do_close(self, args):
     """ close editing json objects """
     #self.poutput("close args %s" % args)
-    self._close( args)
+    self._close_with_deco( args)
 
+  ##################### quit,exit #####################
+  @cmd2.with_argparser(ObedArgParsers.close_parser)
+  def do_quit(self, args):
+    """ override built in quit command
+    usage:
+      quit      - exit. if you have unsaved changes, you will be asked to save it
+      quit -n   - exit without saving changes
+    """
+    self._close(args)
+    return True
+
+  do_exit=do_quit
+    
   ##################### print #####################
   @cmd2.with_argument_list
   @open_at_first
