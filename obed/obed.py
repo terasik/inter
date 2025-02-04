@@ -33,8 +33,9 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.obj_type=None
 
   def _reset(self):
+    """ reset after closing object
+    """ 
     self.obj_hist.clear()
-    #self.hcl=[]
     self.wrk_file=None
     self.obj=None
     self.changed=False
@@ -42,13 +43,21 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     
 
   def hist_choice_provider(self):
+    """ showhist choice provider
+    used for tab completion
+    return numbers of object history array
+    """
     l=len(self.obj_hist)
     return [str(x) for x in range(l)]
 
   def object_choice_provider(self):
+    """ returns elements path of object
+    """
     return self.compl_list
 
   def warn(self, warn_msg=""):
+    """ wrapper for pwarning function of cmd2
+    """
     self.pwarning(warn_msg)
 
   ############# version ##########################
@@ -61,12 +70,15 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.poutput(version('obed'))
 
 
-
   ############# new ##########################
   @cmd2.with_argument_list
   @close_at_first
   def do_new(self, args):
-    """  create new object """
+    """  create new json object 
+    usage:
+      new               - new empty '{}' json object
+      new [json_string] - new json object from string
+    """
     js={}
     if len(args) > 1:
       self.pwarning("loading only first arg. other args will be ignored")
@@ -80,13 +92,18 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       self.obj_type="json"
       self.obj=js
       self.changed=True
-      #self.psuccess("json geladen")
-    
+      #self.psuccess("json loaded")
+   
+ 
   ############# new yaml ##########################
   @cmd2.with_argument_list
   @close_at_first
   def do_new_yaml(self, args):
-    """  create new yaml object """
+    """  create new yaml object 
+    usage:
+      new               - new empty '{}' yaml object
+      new [json_string] - new yaml object from string
+    """
     y={}
     if len(args) > 1:
       self.pwarning("loading only first arg. other args will be ignored")
@@ -102,12 +119,13 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       self.changed=True
       #self.psuccess("json geladen")
     
+
   ############# open ##########################
   @close_at_first
   def do_open(self, arg):
-    """ öffnet json/yaml datei
+    """ load json from file
     usage:
-      open <file>
+      open file     - load file as json
     """
     #self.poutput("sim sim öffne %s ..." % s)
     try:
@@ -121,20 +139,22 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       #self.psuccess("json geladen")
       
   def complete_open(self, text, line, begidx, endidx):
-    """path completion für open"""
+    """path completion for open"""
     return self.path_complete(text, line, begidx, endidx)
 
   ############### save ########################
   @open_at_first
   def do_save(self, arg):
-    """ save to file s
-    if s is not provided or empty,none
-    save to wrk_file """
+    """ save object as json to file 
+    usage:
+      save          - save object to loaded file 
+      save [file]   - save object to file
+    """
     if arg:
-      self.poutput("saving to %s" % arg)
+      self.poutput("saving obj as json to %s" % arg)
       dump_json(self.obj, arg)
     else:
-      self.poutput("saving to current working file")
+      self.poutput("saving obj as json to loaded file")
       dump_json(self.obj, self.wrk_file)
     self.changed=False
 
@@ -145,7 +165,11 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
   ##################### show hist ###################
   @cmd2.with_argument_list
   def do_showhist(self, args):
-    """ show hist entries """
+    """ show object history entries 
+    usage:
+      showhist              - show all object history entries
+      showhist [nr [nr..]]  - show certain object history entries
+    """
     if args:
       for c in args:
         self.poutput(cmd2.ansi.style("hist Nr. %s -> "%c, fg=cmd2.Fg["LIGHT_BLUE"] ))
@@ -156,7 +180,8 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
         self.poutput("%s" % obj_dumps(e, self.obj_type))
 
   def complete_showhist(self, text, line, begidx, endidx):
-    """ completion für print """
+    """ completion for print 
+    """
     return self.basic_complete(text, line, begidx, endidx, match_against=self.hist_choice_provider())
 
   ##################### close #####################
@@ -167,7 +192,8 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self._close(args)
 
   def _close(self, args):
-    """ close editing json objects """
+    """ close objects 
+    """
     #if len(self.obj_hist):
     if self.changed and not args.no_save:
       i=self.read_input("save object before closing? ", 
@@ -190,7 +216,11 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
   @cmd2.with_argparser(ObedArgParsers.close_parser)
   def do_close(self, args):
-    """ close editing json objects """
+    """ close objects 
+    usage:
+      close [-s]    - close with saving changes
+      close -n      - close wthout saving
+    """
     #self.poutput("close args %s" % args)
     self._close_with_deco( args)
 
@@ -199,8 +229,9 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
   def do_quit(self, args):
     """ override built in quit command
     usage:
-      quit      - exit. if you have unsaved changes, you will be asked to save it
-      quit -n   - exit without saving changes
+      quit [-s]     - exit. if you have unsaved changes, you will be asked to save it
+      quit -n       - exit without saving changes
+      quit -h       - print help for quit/exit command
     """
     self._close(args)
     return True
@@ -211,7 +242,11 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
   @cmd2.with_argument_list
   @open_at_first
   def do_print(self, args):
-    """ zeige geladenes json """
+    """print object to stdout 
+    usage:
+      print                   - print whole object
+      print [path [path ..]]  - print one or more object elements described by path
+    """
     #self.poutput("print compl list: %s" % self.jsw.cl)
     if not args:
       self.poutput(obj_dumps(self.obj, self.obj_type))
@@ -222,7 +257,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
         self.poutput("%s" % obj_dumps(self.get_value(e), self.obj_type))
 
   def complete_print(self, text, line, begidx, endidx):
-    """ completion für print """
+    """ completion for print """
     return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
 
 
@@ -230,14 +265,17 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
   @cmd2.with_argument_list
   @open_at_first
   def do_delete(self, args):
-    """ delete elements fromd object """
+    """ delete elements from object 
+    usage:
+      delete path [path ..]  - delete one or more object elements described by path
+    """
     #self.poutput("print compl list: %s" % self.jsw.cl)
     if not args:
       self.pwarning("deleting whole object..")
       self.delete_element()
     else:
       for e in args:
-        self.poutput("deleting element %s" % e)
+        #self.poutput("deleting element %s" % e)
         self.delete_element(e)
     self.changed=True
     
@@ -260,7 +298,11 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
   @cmd2.with_argparser(ObedArgParsers.set_parser)
   def do_setval(self, args):
-    """ set value of object element """
+    """ set value of json  object element(s)
+    usage:
+      setval [path [path ...]] -v value     - set value of whole object, one or more elements desribed by path
+      setval -h                             - show help for setval command
+    """
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
     self._set_val(args)
   
