@@ -430,6 +430,17 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     """path completion for save/write of yaml"""
     return self.path_complete(text, line, begidx, endidx)
 
+  ################### compl test #######################
+  
+  @cmd2.with_argparser(ObedArgParsers.compl_test_parser)
+  def do_compl_test(self, args):
+    """ element completion test
+    usage:
+      compl_test -c ELEMENT [ELEMENT .. ]   - completion with choice provider
+      compl_test -d ELEMENT [ELEMENT .. ]   - completion with delimiter completer
+    """
+
+    self.poutput("compl test: %s" % (args))
 
 def run():
   c = Obed()

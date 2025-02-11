@@ -1,3 +1,4 @@
+import functools
 import cmd2
 from obed.secrets import vault_id_rgx
 
@@ -107,3 +108,18 @@ class ObedArgParsers:
                           help='read vault ids aand passwds from file. file format: vault-id=password',
                           nargs=1,
                           completer=cmd2.Cmd.path_complete)
+
+  # completion test parser
+  def my_delimiter_completer(self, text, line, begidx, endidx):
+    """ completion für print """
+    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
+  #my_delimiter_completer=functools.partial(cmd2.Cmd.delimiter_complete, match_against=object_choice_provider(), delimiter=":")
+  compl_test_parser=cmd2.Cmd2ArgumentParser()
+  compl_test_parser.add_argument('-c', '--choice',
+                          help='completion test with choice provider',
+                          nargs='+',
+                          choices_provider=object_choice_provider)
+  compl_test_parser.add_argument('-d', '--delimiter',
+                          help='completion test with delimiter completer',
+                          nargs='+',
+                          completer=my_delimiter_completer)
