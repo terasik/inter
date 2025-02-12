@@ -40,12 +40,23 @@ class ObedArgParsers:
     """
     return [k for k,v in self.vault_data.items()]
 
+  def my_delimiter_completer(self, text, line, begidx, endidx):
+    """ completion für print """
+    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
+
   # set parser
   set_parser=cmd2.Cmd2ArgumentParser()
   set_group=set_parser.add_mutually_exclusive_group(required=True)
   set_parser.add_argument('elements', help='object element(s) which will be set', nargs='*', choices_provider=object_choice_provider)
   set_group.add_argument('-v', '--value', nargs=1, help='value of object element')
   set_group.add_argument('-t', '--take-from', nargs=1, help='take value from another object element', choices_provider=object_choice_provider)
+
+  # delete parser
+  delete_parser=cmd2.Cmd2ArgumentParser()
+  delete_parser.add_argument('elements', 
+                            help='object element(s) which will be deleted', 
+                            nargs='*', 
+                            completer=my_delimiter_completer)
 
   # set vault parser
   set_vault_parser=cmd2.Cmd2ArgumentParser()
@@ -110,9 +121,6 @@ class ObedArgParsers:
                           completer=cmd2.Cmd.path_complete)
 
   # completion test parser
-  def my_delimiter_completer(self, text, line, begidx, endidx):
-    """ completion für print """
-    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
   #my_delimiter_completer=functools.partial(cmd2.Cmd.delimiter_complete, match_against=object_choice_provider(), delimiter=":")
   compl_test_parser=cmd2.Cmd2ArgumentParser()
   compl_test_parser.add_argument('-c', '--choice',

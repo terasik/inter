@@ -262,26 +262,28 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
 
   ##################### delete #####################
-  @cmd2.with_argument_list
   @open_at_first
-  def do_delete(self, args):
+  def _delete(self, args):
     """ delete elements from object 
     usage:
       delete path [path ..]  - delete one or more object elements described by path
     """
-    #self.poutput("print compl list: %s" % self.jsw.cl)
-    if not args:
+    if not args.elements:
       self.pwarning("deleting whole object..")
       self.delete_element()
     else:
-      for e in args:
+      for e in args.elements:
         #self.poutput("deleting element %s" % e)
         self.delete_element(e)
     self.changed=True
+  
+  @cmd2.with_argparser(ObedArgParsers.delete_parser)
+  def do_delete(self, args):
+    self._delete(args)
     
-  def complete_delete(self, text, line, begidx, endidx):
-    """ completion für print """
-    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
+ # def complete_delete(self, text, line, begidx, endidx):
+ #   """ completion für print """
+ #   return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
 
 
   ###################### set_val ########################
