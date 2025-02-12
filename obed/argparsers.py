@@ -58,6 +58,19 @@ class ObedArgParsers:
                             nargs='*', 
                             completer=my_delimiter_completer)
 
+  # new parser
+  new_parser=cmd2.Cmd2ArgumentParser()
+  new_group=set_parser.add_mutually_exclusive_group(required=True)
+  new_parser.add_argument('obj_str', 
+                          help='object string', 
+                          nargs=(0,1))
+  new_group.add_argument('-y', '--yaml',
+                          help='new yaml object',
+                          action='store_true')
+  new_group.add_argument('-j', '--json',
+                          help='new json object',
+                          action='store_true')
+
   # set vault parser
   set_vault_parser=cmd2.Cmd2ArgumentParser()
   set_vault_group=set_vault_parser.add_mutually_exclusive_group(required=True)
