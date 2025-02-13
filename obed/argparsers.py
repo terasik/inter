@@ -60,7 +60,7 @@ class ObedArgParsers:
 
   # new parser
   new_parser=cmd2.Cmd2ArgumentParser()
-  new_group=set_parser.add_mutually_exclusive_group(required=True)
+  new_group=new_parser.add_mutually_exclusive_group(required=True)
   new_parser.add_argument('obj_str', 
                           help='object string', 
                           nargs=(0,1))
@@ -106,13 +106,12 @@ class ObedArgParsers:
   close_group.add_argument('-s', '--save', help='save before close', action='store_true')
   close_group.add_argument('-n', '--no-save', help='dont save before closing', action='store_true')
 
-  # open yaml parser
-  open_yaml_parser=cmd2.Cmd2ArgumentParser()
-  open_yaml_parser.add_argument('yaml_file',
-                          help='yaml file to load',
+  # open file parser
+  open_parser=cmd2.Cmd2ArgumentParser()
+  open_parser.add_argument('file',
+                          help='file to load',
                           nargs=1,
                           completer=cmd2.Cmd.path_complete)
-
 
   # vault parser
   vault_parser=cmd2.Cmd2ArgumentParser()
