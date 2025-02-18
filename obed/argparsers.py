@@ -113,6 +113,16 @@ class ObedArgParsers:
                           nargs=1,
                           completer=cmd2.Cmd.path_complete)
 
+  # save parser
+  save_parser=cmd2.Cmd2ArgumentParser()
+  save_parser.add_argument('file',
+                          help='save object to file.',
+                          nargs='*',
+                          completer=cmd2.Cmd.path_complete)
+  save_parser.add_argument('-t', '--type',
+                          help='type of saved object [json, yaml]',
+                          choices=['json', 'yaml'])
+
   # vault parser
   vault_parser=cmd2.Cmd2ArgumentParser()
   vault_group=vault_parser.add_mutually_exclusive_group()
