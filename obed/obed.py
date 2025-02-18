@@ -69,82 +69,105 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     from importlib.metadata import version
     self.poutput(version('obed'))
 
-
   ############# new ##########################
-  @cmd2.with_argument_list
   @close_at_first
-  def do_new(self, args):
-    """  create new json object 
-    usage:
-      new               - new empty '{}' json object
-      new [json_string] - new json object from string
-    """
-    js={}
-    if len(args) > 1:
-      self.pwarning("loading only first arg. other args will be ignored")
-    try:
-      if args:
-        js=convert_to_json(args[0], True, True)
-    except Exception as _exc:
-      self.perror("not possible to load argument as json obj: %s" % _exc)
-    else:
-      #self.wrk_file=s
+  def _new(self, args):
+    obj={}
+    if args.json:
+      if args.obj_str:
+        obj=convert_to_json(args.obj_str, True, True)
       self.obj_type="json"
-      self.obj=js
-      self.changed=True
-      #self.psuccess("json loaded")
-   
- 
-  ############# new yaml ##########################
-  @cmd2.with_argument_list
-  @close_at_first
-  def do_new_yaml(self, args):
-    """  create new yaml object 
-    usage:
-      new               - new empty '{}' yaml object
-      new [json_string] - new yaml object from string
-    """
-    y={}
-    if len(args) > 1:
-      self.pwarning("loading only first arg. other args will be ignored")
-    try:
-      if args:
-        y=yaml.load(args[0], Loader=get_loader())
-    except Exception as _exc:
-      self.perror("not possible to load argument as yaml obj: %s" % _exc)
-    else:
-      #self.wrk_file=s
+    elif args.yaml:
+      if args.obj_str:
+        obj=yaml.load(args.obj_str, Loader=get_loader())
       self.obj_type="yaml"
-      self.obj=y
-      self.changed=True
-      #self.psuccess("json geladen")
+    else:
+      self.pwarning("no info about obj type. setting new obj to json: {}")
+      self.obj_type="json"
+    self.obj=obj
+    self.changed=True
     
+
+  @cmd2.with_argparser(ObedArgParsers.new_parser)
+  def do_new(self, args):
+    """  create new  object 
+    usage:
+      new                     - new empty '{}' json object
+      new -j [object_string]  - new json object from string. defaults to {}
+      new -y [object_string]  - new yaml object from string. defaults to {}
+    example:
+      new -j '{"a": [1, 2, "c"]}' - creating new dict json object
+    """
+    self._new(args)
 
   ############# open ##########################
   @close_at_first
-  def do_open(self, arg):
-    """ load json from file
+  def _open(self, args):
+    try:
+      obj=load_json(args.file[0])
+      self.psuccess("loaded file as json")
+      self.obj_type="json"
+    except:
+      try:
+        with open(args.file[0]) as f:
+          obj=yaml.load(f, Loader=get_loader())
+        if not isinstance(obj, (dict,list)):
+          raise TypeError
+        self.obj_type="yaml"
+        self.psuccess("loaded file as yaml")
+      except:
+        raise TypeError("neither json nor yaml loaders has worked to open file: %s" % args.file[0])
+    self.wrk_file=args.file[0]
+    self.obj=obj
+  
+  @cmd2.with_argparser(ObedArgParsers.open_parser)
+  def do_open(self, args):
+    """ load json/yaml from file
     usage:
       open file     - load file as json
     """
-    #self.poutput("sim sim öffne %s ..." % s)
-    try:
-      js=load_json(arg)
-    except Exception as _exc:
-      self.perror("not possible to load json file: %s" % _exc)
-    else:
-      self.obj_type="json"
-      self.wrk_file=arg
-      self.obj=js
-      #self.psuccess("json geladen")
-      
-  def complete_open(self, text, line, begidx, endidx):
-    """path completion for open"""
-    return self.path_complete(text, line, begidx, endidx)
+    self._open(args)
 
+  do_load=do_open
+      
   ############### save ########################
   @open_at_first
-  def do_save(self, arg):
+  def _save(self, args):
+    if not self.wrk_file and not args.file:
+      self.perror("please provide file name to save object")
+      return
+    if self.wrk_file and not args.file:
+      #self.poutput("save object to current opened file: %s" % self.wrk_file)
+      file_to_write=self.wrk_file
+    else:
+      #self.poutput("save object to file: %s" % args.file[0])
+      file_to_write=args.file[0]
+    if args.type=="json" or (not args.type and self.obj_type=="json"):
+      self.poutput("saving object as json to %s" % file_to_write)
+      dump_json(self.obj, file_to_write)
+    elif args.type=="yaml" or (not args.type and self.obj_type=="yaml"):
+      self.poutput("saving object as yaml to %s" % file_to_write)
+      dump_yaml(self.obj, file_to_write)
+    else:
+      self.perror("which type of object i should use to save this object...")
+      return 
+    self.changed=False
+      
+  @cmd2.with_argparser(ObedArgParsers.save_parser)
+  def do_save(self, args):
+    """ save object to file
+    usage:
+      save                              - save object to loaded/opened filed
+      save [file] [-t json] [-t yaml]   - save object to file as yaml or json
+
+    notice:
+      if no '-t' option provided, self detected object type will be used
+    """
+    #print("save args: %s" % args)
+    self._save(args)
+
+  @open_at_first
+  def _do_save(self, arg):
     """ save object as json to file 
     usage:
       save          - save object to loaded file 
@@ -158,8 +181,26 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       dump_json(self.obj, self.wrk_file)
     self.changed=False
 
-  def complete_save(self, text, line, begidx, endidx):
+  def _complete_save(self, text, line, begidx, endidx):
     """path completion for save/write"""
+    return self.path_complete(text, line, begidx, endidx)
+
+  ##################### save_yaml #######################
+  @open_at_first
+  def _do_save_yaml(self, arg):
+    """ save yaml to file s
+    if s is not provided or empty,none
+    save to wrk_file """
+    if arg:
+      self.poutput("saving as yaml to %s" % arg)
+      dump_yaml(self.obj, arg)
+    else:
+      self.poutput("saving as yaml to current working file")
+      dump_yaml(self.obj, self.wrk_file)
+    self.changed=False
+
+  def _complete_save_yaml(self, text, line, begidx, endidx):
+    """path completion for save/write of yaml"""
     return self.path_complete(text, line, begidx, endidx)
 
   ##################### show hist ###################
@@ -262,28 +303,25 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
 
   ##################### delete #####################
-  @cmd2.with_argument_list
   @open_at_first
-  def do_delete(self, args):
+  def _delete(self, args):
     """ delete elements from object 
     usage:
       delete path [path ..]  - delete one or more object elements described by path
     """
-    #self.poutput("print compl list: %s" % self.jsw.cl)
-    if not args:
+    if not args.elements:
       self.pwarning("deleting whole object..")
       self.delete_element()
     else:
-      for e in args:
+      for e in args.elements:
         #self.poutput("deleting element %s" % e)
         self.delete_element(e)
     self.changed=True
+  
+  @cmd2.with_argparser(ObedArgParsers.delete_parser)
+  def do_delete(self, args):
+    self._delete(args)
     
-  def complete_delete(self, text, line, begidx, endidx):
-    """ completion für print """
-    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
-
-
   ###################### set_val ########################
   @open_at_first
   def _set_val(self, args):
@@ -398,38 +436,17 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       self.vault_data_print(args.print)
 
 
-  ###################### yaml ########################
-  @close_at_first
-  def _open_yaml(self, args):
-    with open(args.yaml_file[0]) as f:
-      y=yaml.load(f, Loader=get_loader())
-    self.obj_type="yaml"
-    self.wrk_file=args.yaml_file[0]
-    self.obj=y
-
-  @cmd2.with_argparser(ObedArgParsers.open_yaml_parser)
-  def do_open_yaml(self, args):
-    """ open yaml file
+  ################### compl test #######################
+  
+  @cmd2.with_argparser(ObedArgParsers.compl_test_parser)
+  def do_compl_test(self, args):
+    """ element completion test
+    usage:
+      compl_test -c ELEMENT [ELEMENT .. ]   - completion with choice provider
+      compl_test -d ELEMENT [ELEMENT .. ]   - completion with delimiter completer
     """
-    self._open_yaml(args)
 
-  @open_at_first
-  def do_save_yaml(self, arg):
-    """ save yaml to file s
-    if s is not provided or empty,none
-    save to wrk_file """
-    if arg:
-      self.poutput("saving as yaml to %s" % arg)
-      dump_yaml(self.obj, arg)
-    else:
-      self.poutput("saving as yaml to current working file")
-      dump_yaml(self.obj, self.wrk_file)
-    self.changed=False
-
-  def complete_save_yaml(self, text, line, begidx, endidx):
-    """path completion for save/write of yaml"""
-    return self.path_complete(text, line, begidx, endidx)
-
+    self.poutput("compl test: %s" % (args))
 
 def run():
   c = Obed()

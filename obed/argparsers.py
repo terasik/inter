@@ -1,3 +1,4 @@
+import functools
 import cmd2
 from obed.secrets import vault_id_rgx
 
@@ -39,12 +40,36 @@ class ObedArgParsers:
     """
     return [k for k,v in self.vault_data.items()]
 
+  def my_delimiter_completer(self, text, line, begidx, endidx):
+    """ completion für print """
+    return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
+
   # set parser
   set_parser=cmd2.Cmd2ArgumentParser()
   set_group=set_parser.add_mutually_exclusive_group(required=True)
   set_parser.add_argument('elements', help='object element(s) which will be set', nargs='*', choices_provider=object_choice_provider)
   set_group.add_argument('-v', '--value', nargs=1, help='value of object element')
   set_group.add_argument('-t', '--take-from', nargs=1, help='take value from another object element', choices_provider=object_choice_provider)
+
+  # delete parser
+  delete_parser=cmd2.Cmd2ArgumentParser()
+  delete_parser.add_argument('elements', 
+                            help='object element(s) which will be deleted', 
+                            nargs='*', 
+                            completer=my_delimiter_completer)
+
+  # new parser
+  new_parser=cmd2.Cmd2ArgumentParser()
+  new_group=new_parser.add_mutually_exclusive_group(required=True)
+  new_parser.add_argument('obj_str', 
+                          help='object string', 
+                          nargs=(0,1))
+  new_group.add_argument('-y', '--yaml',
+                          help='new yaml object',
+                          action='store_true')
+  new_group.add_argument('-j', '--json',
+                          help='new json object',
+                          action='store_true')
 
   # set vault parser
   set_vault_parser=cmd2.Cmd2ArgumentParser()
@@ -81,13 +106,22 @@ class ObedArgParsers:
   close_group.add_argument('-s', '--save', help='save before close', action='store_true')
   close_group.add_argument('-n', '--no-save', help='dont save before closing', action='store_true')
 
-  # open yaml parser
-  open_yaml_parser=cmd2.Cmd2ArgumentParser()
-  open_yaml_parser.add_argument('yaml_file',
-                          help='yaml file to load',
+  # open file parser
+  open_parser=cmd2.Cmd2ArgumentParser()
+  open_parser.add_argument('file',
+                          help='file to load',
                           nargs=1,
                           completer=cmd2.Cmd.path_complete)
 
+  # save parser
+  save_parser=cmd2.Cmd2ArgumentParser()
+  save_parser.add_argument('file',
+                          help='save object to file.',
+                          nargs='*',
+                          completer=cmd2.Cmd.path_complete)
+  save_parser.add_argument('-t', '--type',
+                          help='type of saved object [json, yaml]',
+                          choices=['json', 'yaml'])
 
   # vault parser
   vault_parser=cmd2.Cmd2ArgumentParser()
@@ -107,3 +141,15 @@ class ObedArgParsers:
                           help='read vault ids aand passwds from file. file format: vault-id=password',
                           nargs=1,
                           completer=cmd2.Cmd.path_complete)
+
+  # completion test parser
+  #my_delimiter_completer=functools.partial(cmd2.Cmd.delimiter_complete, match_against=object_choice_provider(), delimiter=":")
+  compl_test_parser=cmd2.Cmd2ArgumentParser()
+  compl_test_parser.add_argument('-c', '--choice',
+                          help='completion test with choice provider',
+                          nargs='+',
+                          choices_provider=object_choice_provider)
+  compl_test_parser.add_argument('-d', '--delimiter',
+                          help='completion test with delimiter completer',
+                          nargs='+',
+                          completer=my_delimiter_completer)
