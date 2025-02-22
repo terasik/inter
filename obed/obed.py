@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""
+obed package file with Obed class. 
+Obed class implements cmd2 commands to handle yaml or json objects.
+to get help type after start of obed script:
+> help
+or
+> help CMD
+or (for the most commands)
+> CMD --help
+"""
 import sys
 import re
 import os
@@ -13,15 +23,12 @@ from obed.yavault import get_loader,VaultData
 
 class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
-  """ handle json/yaml interactive
-  cmd list:
-
-    open  <file>                    -> open json/yaml file
-    print <e> .. <e>                -> print values of elements
-    update <e> -k <key> -v <value>  -> combine element with {key: value}
-    set <e> -v <value>              -> set value
-    new <file>                      -> new file
-                                        if file exists 'open' will be used
+  """ Obed class inherits from
+  ObjWalk - with methods from cmd2.Cmd class and functions
+            to handle with obj tabcompletion and values
+  ObedArgParsers - class with cmd2.Cmd2ArgumentParser definitions
+            for a lot of implemented commands
+  ObedVault - class to handle ansible vault data and vault command 
   """
 
   def __init__(self):
@@ -41,7 +48,6 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.changed=False
     self.obj_type=None  
     
-
   def hist_choice_provider(self):
     """ showhist choice provider
     used for tab completion
@@ -60,6 +66,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     """
     self.pwarning(warn_msg)
 
+
   ############# version ##########################
   def do_version(self, _):
     """ show version of obed package
@@ -68,6 +75,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     """
     from importlib.metadata import version
     self.poutput(version('obed'))
+
 
   ############# new ##########################
   @close_at_first
@@ -87,7 +95,6 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.obj=obj
     self.changed=True
     
-
   @cmd2.with_argparser(ObedArgParsers.new_parser)
   def do_new(self, args):
     """  create new  object 
@@ -99,6 +106,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       new -j '{"a": [1, 2, "c"]}' - creating new dict json object
     """
     self._new(args)
+
 
   ############# open ##########################
   @close_at_first
@@ -129,10 +137,12 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self._open(args)
 
   do_load=do_open
+
       
   ############### save ########################
   @open_at_first
   def _save(self, args):
+    """ save objects to files """
     if not self.wrk_file and not args.file:
       self.perror("please provide file name to save object")
       return
@@ -166,42 +176,6 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     #print("save args: %s" % args)
     self._save(args)
 
-  @open_at_first
-  def _do_save(self, arg):
-    """ save object as json to file 
-    usage:
-      save          - save object to loaded file 
-      save [file]   - save object to file
-    """
-    if arg:
-      self.poutput("saving obj as json to %s" % arg)
-      dump_json(self.obj, arg)
-    else:
-      self.poutput("saving obj as json to loaded file")
-      dump_json(self.obj, self.wrk_file)
-    self.changed=False
-
-  def _complete_save(self, text, line, begidx, endidx):
-    """path completion for save/write"""
-    return self.path_complete(text, line, begidx, endidx)
-
-  ##################### save_yaml #######################
-  @open_at_first
-  def _do_save_yaml(self, arg):
-    """ save yaml to file s
-    if s is not provided or empty,none
-    save to wrk_file """
-    if arg:
-      self.poutput("saving as yaml to %s" % arg)
-      dump_yaml(self.obj, arg)
-    else:
-      self.poutput("saving as yaml to current working file")
-      dump_yaml(self.obj, self.wrk_file)
-    self.changed=False
-
-  def _complete_save_yaml(self, text, line, begidx, endidx):
-    """path completion for save/write of yaml"""
-    return self.path_complete(text, line, begidx, endidx)
 
   ##################### show hist ###################
   @cmd2.with_argument_list
@@ -224,6 +198,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     """ completion for print 
     """
     return self.basic_complete(text, line, begidx, endidx, match_against=self.hist_choice_provider())
+
 
   ##################### close #####################
   @open_at_first
@@ -265,6 +240,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     #self.poutput("close args %s" % args)
     self._close_with_deco( args)
 
+
   ##################### quit,exit #####################
   @cmd2.with_argparser(ObedArgParsers.close_parser)
   def do_quit(self, args):
@@ -278,6 +254,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     return True
 
   do_exit=do_quit
+
     
   ##################### print #####################
   @cmd2.with_argument_list
@@ -321,6 +298,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
   @cmd2.with_argparser(ObedArgParsers.delete_parser)
   def do_delete(self, args):
     self._delete(args)
+
     
   ###################### set_val ########################
   @open_at_first
@@ -363,6 +341,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
     self._set_val_vault(args)
 
+
   ###################### append to list ########################
   @open_at_first
   def _append(self, args):
@@ -382,6 +361,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     """ append value of object element """
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
     self._append(args)
+
 
   ###################### append vault to list ########################
   @open_at_first
@@ -405,8 +385,8 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
     self._append_vault(args)
 
-  ###################### copy elements ########################
 
+  ###################### copy elements ########################
   @open_at_first
   def _copy(self, args):
     """ copy obj elements to other obj elements  """
@@ -437,7 +417,6 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
 
   ################### compl test #######################
-  
   @cmd2.with_argparser(ObedArgParsers.compl_test_parser)
   def do_compl_test(self, args):
     """ element completion test
@@ -445,10 +424,11 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       compl_test -c ELEMENT [ELEMENT .. ]   - completion with choice provider
       compl_test -d ELEMENT [ELEMENT .. ]   - completion with delimiter completer
     """
-
     self.poutput("compl test: %s" % (args))
 
+
 def run():
+  """ enter the void """
   c = Obed()
   sys.exit(c.cmdloop())
 

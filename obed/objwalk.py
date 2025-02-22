@@ -89,7 +89,6 @@ class ObjWalk(cmd2.Cmd):
         obj=obj[idx_or_key]
     return (obj, idx_or_key)
   
-
   def _get_object_ref(self, opath=""):
     """ return reference to object or object element 
     params:
@@ -128,7 +127,6 @@ class ObjWalk(cmd2.Cmd):
       self.pwarning("copy to root of object not implemeted yet. please use 'setval' or 'append'")
     self.build_completion_list()
 
-
   def set_value_vault(self, opath, value, vault_id):
     """ setting value as vault value
     """
@@ -156,7 +154,6 @@ class ObjWalk(cmd2.Cmd):
       self.obj.append(value)
     self.build_completion_list()
           
-          
   def set_value(self, opath ="", value=None):
     """ setting value of object or object element
     params:
@@ -175,7 +172,6 @@ class ObjWalk(cmd2.Cmd):
       self.build_completion_list()
     else:
       self.obj=value
-
 
   def append_value(self, opath="", value=None):
     """ append value to list in object
