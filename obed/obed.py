@@ -12,6 +12,7 @@ or (for the most commands)
 import sys
 import re
 import os
+from time import sleep
 import yaml
 import cmd2
 from obed.objwalk import ObjWalk
@@ -425,6 +426,29 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       compl_test -d ELEMENT [ELEMENT .. ]   - completion with delimiter completer
     """
     self.poutput("compl test: %s" % (args))
+
+
+  ################### wait,sleep #######################
+  @cmd2.with_argument_list
+  def do_wait(self, args):
+    """ wait some seconds
+    usage:
+      wait [SECONDS]   - wait/sleep for SECONDS. if no SECONDS provided wait for 1s
+    """
+    if args:
+      for arg in args:
+        try:
+          sec_to_sleep=int(arg)
+          if sec_to_sleep < 1:
+            sec_to_sleep=1
+          elif sec_to_sleep > 10:
+            sec_to_sleep=10
+        except:
+          self.pwarning("can't convert arg '%s' to int" % arg)
+          sec_to_sleep=1
+        sleep(sec_to_sleep)
+    else:
+      sleep(1)
 
 
 def run():
