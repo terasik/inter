@@ -1,0 +1,41 @@
+# show commands
+set echo true
+
+# new json object
+new -j
+print
+wait
+
+# setting new key=name to value="fimorius barborius"
+setval name -v "fimorius barborius"
+print
+wait
+
+# setting new empty list
+setval books -v []
+print
+wait
+
+# append new book to books list
+append books -v '{"year": 1964, "author": {"name": "karamunga", "lastname": "beret"}, "with_love": true, "from space": "i dont know"}'
+print
+wait
+
+# delete "from space" element from first book in the books list
+delete "books[0]:from space"
+print
+wait
+
+# append new book again but without author
+append books -v '{"year": 1976, "with_love": false, "author":""}'
+print
+wait
+
+# copy author from first book to second
+copy books[0]:author -d books[1]:author
+print 
+wait
+
+# close object without saving
+# bye, bye
+close -n
