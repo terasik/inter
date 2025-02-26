@@ -36,6 +36,21 @@ copy books[0]:author -d books[1]:author
 print 
 wait
 
+# change year of the second book and print years of books
+setval books[1]:year -v 1977
+print books[1]:year books[0]:year
+wait
+
+# create new list
+setval rings -v []
+print
+wait
+
+# appending more than 1 values
+append books rings -v "alive" '{"day": "yesterday", "abc": ["uzt", 1234, true]}'
+print
+wait
+
 # close object without saving
 # bye, bye
 close -n
