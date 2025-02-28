@@ -1,0 +1,27 @@
+# show commands
+set echo true
+
+# open yaml file
+open inter/examples/example.yml
+print
+wait
+
+# setting new novault key=name with value="fimorius barborius"
+setval name -v "fimorius barborius"
+print
+wait
+
+# create simple vault file with shell 
+shell echo "test_id = fhvThv6rgdeRD" >> .myvault
+wait
+
+# load your created vault file
+vault -l .myvault
+wait
+
+# print loaded vault ids with passwords
+vault -p
+wait
+
+# bye bye
+close -n

@@ -51,6 +51,25 @@ append books rings -v "alive" '{"day": "yesterday", "abc": ["uzt", 1234, true]}'
 print
 wait
 
-# close object without saving
+# setting value to more than 1 element
+setval name rings[0] rings[1]:abc -v pirogov
+print
+wait
+
+# show some object changes with showhist
+showhist 0 3
+wait
+
+# save object to file as json
+save myobject.json
+wait
+
+# save same object to file as yaml
+save myobject.yaml -t yaml
+wait
+
 # bye, bye
-close -n
+close
+
+# show saved files with shell
+!cat myobject.yaml
