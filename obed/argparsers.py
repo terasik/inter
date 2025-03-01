@@ -39,6 +39,14 @@ class ObedArgParsers:
     """
     return [k for k,v in self.vault_data.items()]
 
+  def hist_choice_provider(self):
+    """ showhist choice provider
+    used for tab completion
+    return numbers of object history array
+    """
+    l=len(self.obj_hist)
+    return [str(x) for x in range(l)]
+
   def my_delimiter_completer(self, text, line, begidx, endidx):
     """ completion für print """
     return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
@@ -203,3 +211,13 @@ class ObedArgParsers:
                           help='completion test with delimiter completer',
                           nargs='+',
                           completer=my_delimiter_completer)
+
+  # restore command parser
+  restore_parser=cmd2.Cmd2ArgumentParser()
+  restore_parser.add_argument('hist_idx',
+                              help="history index (integer)",
+                              nargs=(0,1),
+                              default=-1,
+                              type=int,
+                              choices_provider=hist_choice_provider)
+                              
