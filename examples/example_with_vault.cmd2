@@ -12,7 +12,15 @@ print
 wait
 
 # create simple vault file with shell 
-shell echo "test_id = fhvThv6rgdeRD" >> .myvault
+shell echo "first_vid = fhvThv6rgdeRD" > .myvault
+wait
+
+# add comment to your vault file 
+shell echo "# some comment" >> .myvault
+wait
+
+# add second vault id to your vault file
+shell echo "second_vid = UZGuBceg74rdbs" >> .myvault
 wait
 
 # load your created vault file
@@ -21,6 +29,29 @@ wait
 
 # print loaded vault ids with passwords
 vault -p
+wait
+
+# provide password to another vault with -r option
+vault another_vid -r
+wait
+
+# print loaded vault ids again
+vault -p
+wait
+
+# create some new vault value
+setval_vault b:for -v trabadum --vault-id second_vid
+print
+wait
+
+# append some new vault value to list
+append_vault c -v ugamuga --vault-id another_vid
+print
+wait
+
+# save obejct to some file and show it with shell
+save myobj_with_vault.yml
+!cat myobj_with_vault.yml
 wait
 
 # bye bye

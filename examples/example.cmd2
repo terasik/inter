@@ -56,6 +56,16 @@ setval name rings[0] rings[1]:abc -v pirogov
 print
 wait
 
+# setval take value(s) from another element
+setval books -t rings[1]:day
+print 
+wait
+
+# append take value(s) from another elemnt
+append rings -t name
+print
+wait
+
 # show some object changes with showhist
 showhist 0 3
 wait

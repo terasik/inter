@@ -28,7 +28,6 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
 - documentation
 - restoring object from history with *restore* command
 - generate passwords
-- wait command for demos
 
 ## examples/usage
 for next steps: 
