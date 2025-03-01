@@ -1,3 +1,0 @@
-vault -l inter/tests/vault_ids
-open_yaml inter/tests/yaml_vault_file.yml
-print

@@ -13,11 +13,12 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
   - *copy* - copy values from elements to another elements
   - *print* - printing yaml or json objects to sdtout
   - *showhist* - show object history after changes
-  - *open*,*open_yaml* - loading json or yaml files
-  - *new*,*new_yaml* - creating new json or yaml object from stdin (strings)
-  - *save*,*save_yaml* - saving json or yaml objects to file
+  - *open* - loading json or yaml files
+  - *new* - creating new json or yaml object from stdin (strings)
+  - *save* - saving json or yaml objects to file
   - *close* - closing object (with save or without saving it)
-- supporting ansible vault yaml values
+  - *version* - print version of obed package/script
+- supporting ansible vault yaml values (**works only with yaml objects**)
   - *vault* - handling vault ids and vault passwords
   - *setval_vault* - setting vault values
   - *append_vault* - appending valut values to list
@@ -25,9 +26,8 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
 
 ## TODO's
 - documentation
-- *version* cmd
-- some helpfull aliase like *exit*
 - restoring object from history with *restore* command
+- generate passwords
 
 ## examples/usage
 for next steps: 
@@ -56,10 +56,10 @@ after installation of *obed* package you have executable *obed* script. start th
 ```shell
 obed
 ```
-after successfull start. you have *>* prompt.
+after successfull start you have *>* prompt.
 
 ### loading objects from file
-to load objects from file use *open* for json objects or *open_yaml* for yaml objects. use tabulator for path completion
+to load objects from file use *open* command. use tabulator for path completion
 ```
 open examples/example.json
 ```
@@ -95,7 +95,7 @@ b:for ->
 c[0] -> 
 "man"
 ```
-using colon *:* to get subelements of objects. use *[]* to get elements of list.
+use colon *:* to get subelements of objects. use *[]* to get elements of list.
 
 ### setting values of object/object elements
 to set value of object elements use *setval* command. to set new value to element use:
@@ -166,7 +166,7 @@ a ->
 use *setval --help* for help
 it is possible to set one value to many elements. you can set also value to whole object. example:
 ```
-> new '{"a": 23}'
+> new '{"a": 23}' -j
 > print
 {
   "a": 23
@@ -234,7 +234,7 @@ c ->
 
 with *append* you can append one or more values to one or more object elements. if whole object is a list, you can append also to whole object values. example
 ```
-> new []
+> new [] -j
 > append -v where are you?
 > print
 [
@@ -370,7 +370,7 @@ to set vault values use *setval_vault* command. for appending vault values to li
 example of using vault data:
 ```
 > # create new empty yaml object
-> new_yaml                    
+> new -y                    
 > # read vault-id and password from stdin                                                                                                                                                                                                     > vault -r                                                                                                                                                                                                                                    
 no vault_ids was provided. asking for vault_ids and their passwords                                                                                                                                                                           
 break asking loop with ';break', ';stop' or Ctrl-C                                                                                                                                                                                            
@@ -395,7 +395,7 @@ normal_var: dodeskaden, dodeskaden
 vault_var: !vault 'gravizapa'
 
 > # save object to yaml file
-> save_yaml some_vault.yml
+> save some_vault.yml
 saving as yaml to some_vault.yml
 > # show yaml file with shell command cat ('!' is shortcut for 'shell' command)
 > !cat some_vault.yml 
@@ -411,11 +411,13 @@ vault_var: !vault |
 ```
 
 ### creating new object from stdin
-to create new json or yaml obkect from stdin use *new* for json objects and *new_yaml* for yaml objects. if no parameter was provided to *new* or *new_yaml*, empty dict will be created.
+to create new json or yaml object from stdin use *new* command. 
+to create new json object use *-j* or *--json* option. for yaml new yaml oqsbjects use *-y* or *--yaml*. 
+if no positional args was provided to *new*, empty dict will be created.
 
 json example:
 ```
-> new '["a", true, {"b": "tr"}]'
+> new --json '["a", true, {"b": "tr"}]'
 > print
 [
   "a",
@@ -427,7 +429,7 @@ json example:
 ```
 yaml example:
 ```
-> new_yaml '["a", true, {"b": "tr"}]'
+> new '["a", true, {"b": "tr"}]' -y
 > print
 - a
 - true
@@ -435,7 +437,11 @@ yaml example:
 ```
 
 ### saving objects to file
-to save objects to file use *save* for json or *save_yaml* for yaml objects. you can use tab completion to select files.
+to save objects to file use *save* command. you can use tab completion to select files.
+if no positional args was provided, *obed* will try to save to the file opened with *open* cmd. 
+if no *-t* or *--type*  option was provided, *save* cmd will use type (*json* or *yaml*) detected by *open* or *new* commands.
+**NOTICE: ansible vault values works only with yaml**
 
 ### closing objects
 to close objects use *close* command. if you have some unsaved changes you can save your object to file. 
+if you want to close without saving provide *-n* option to *close* cmd.
