@@ -13,6 +13,7 @@ import sys
 import re
 import os
 from time import sleep
+from copy import deepcopy
 import yaml
 import cmd2
 from obed.objwalk import ObjWalk
@@ -49,13 +50,13 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.changed=False
     self.obj_type=None  
     
-  def hist_choice_provider(self):
-    """ showhist choice provider
-    used for tab completion
-    return numbers of object history array
-    """
-    l=len(self.obj_hist)
-    return [str(x) for x in range(l)]
+#  def hist_choice_provider(self):
+#    """ showhist choice provider
+#    used for tab completion
+#    return numbers of object history array
+#    """
+#    l=len(self.obj_hist)
+#    return [str(x) for x in range(l)]
 
   def object_choice_provider(self):
     """ returns elements path of object
@@ -449,6 +450,21 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
         sleep(sec_to_sleep)
     else:
       sleep(1)
+
+  ######################### restore ######################
+  @open_at_first
+  def _restore(self, args):
+    #print("args: %s" % args)
+    hist_idx=args.hist_idx
+    self.poutput("restoring obj from hist nr. %s" % hist_idx)
+    self.obj=deepcopy(self.obj_hist[hist_idx])
+    del self.obj_hist[hist_idx]
+    self.changed=True
+    
+
+  @cmd2.with_argparser(ObedArgParsers.restore_parser)
+  def do_restore(self, args):
+    self._restore(args)
 
 
 def run():

@@ -22,7 +22,7 @@ class ObjWalk(cmd2.Cmd):
     super().__init__()
     self.coml_list=[]
     self.obj=obj
-    self.obj_hist=deque([], 10)
+    self.obj_hist=deque([], 50)
   
   @property
   def obj(self):

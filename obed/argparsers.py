@@ -40,12 +40,13 @@ class ObedArgParsers:
     return [k for k,v in self.vault_data.items()]
 
   def hist_choice_provider(self):
-    """ showhist choice provider
+    """ showhist,restore choice provider
     used for tab completion
     return numbers of object history array
+    negativ list: list(range(-len(a), 0, 1))
     """
     l=len(self.obj_hist)
-    return [str(x) for x in range(l)]
+    return [str(i) for i in list(range(-l, l, 1))]
 
   def my_delimiter_completer(self, text, line, begidx, endidx):
     """ completion für print """
@@ -217,7 +218,7 @@ class ObedArgParsers:
   restore_parser.add_argument('hist_idx',
                               help="history index (integer)",
                               nargs=(0,1),
-                              default=-1,
+                              default="-1",
                               type=int,
                               choices_provider=hist_choice_provider)
                               
