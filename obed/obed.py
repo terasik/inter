@@ -459,11 +459,15 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
   ######################### restore ######################
   @open_at_first
   def _restore(self, args):
-    #print("args: %s" % args)
+    """ restor help function
+    current object will be saved and after restore
+    appended to object history
+    """
     hist_idx=args.hist_idx
     self.poutput("restoring obj from hist nr. %s" % hist_idx)
+    curr_obj=deepcopy(self.obj)
     self.obj=deepcopy(self.obj_hist[hist_idx])
-    #del self.obj_hist[hist_idx]
+    self.obj_hist.append(curr_obj)
     self.changed=True
     
 
