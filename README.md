@@ -13,6 +13,7 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
   - *copy* - copy values from elements to another elements
   - *print* - printing yaml or json objects to sdtout
   - *showhist* - show object history after changes
+  - *restore* - restore object from object history
   - *open* - loading json or yaml files
   - *new* - creating new json or yaml object from stdin (strings)
   - *save* - saving json or yaml objects to file
@@ -26,7 +27,6 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
 
 ## TODO's
 - documentation
-- restoring object from history with *restore* command
 - generate passwords
 
 ## examples/usage
@@ -445,3 +445,61 @@ if no *-t* or *--type*  option was provided, *save* cmd will use type (*json* or
 ### closing objects
 to close objects use *close* command. if you have some unsaved changes you can save your object to file. 
 if you want to close without saving provide *-n* option to *close* cmd.
+
+### object change history
+every change on object will be saved in internal object history list. up to 50 changes will be saved. to show object history use *showhist* command
+```
+> new -j
+> setval a -v b
+> setval b -v c
+> setval c -v d
+> print
+{
+  "a": "b",
+  "b": "c",
+  "c": "d"
+}
+> showhist
+hist Nr. 0 -> 
+{}
+hist Nr. 1 -> 
+{
+  "a": "b"
+}
+hist Nr. 2 -> 
+{
+  "a": "b",
+  "b": "c"
+}
+```
+to restore object from internal history list use *restore* command. as example object histor we will use object defined above.
+```
+> # restore last-1 change
+> restore -2
+restoring obj from hist nr. -2
+> print
+{
+  "a": "b"
+}
+> # restored object will be deleted from object history
+> showhist
+hist Nr. 0 -> 
+{}
+hist Nr. 1 -> 
+{
+  "a": "b",
+  "b": "c"
+}
+> # restore to first change
+> restore 0
+restoring obj from hist nr. 0
+> print
+{}
+> showhist
+hist Nr. 0 -> 
+{
+  "a": "b",
+  "b": "c"
+}
+```
+

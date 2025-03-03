@@ -186,6 +186,11 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     usage:
       showhist              - show all object history entries
       showhist [nr [nr..]]  - show certain object history entries
+                              examples for nr:
+                                0 -> first change
+                                1 -> second change
+                               -1 -> last change
+                               -2 -> last-1 change
     """
     if args:
       for c in args:
@@ -464,6 +469,16 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
   @cmd2.with_argparser(ObedArgParsers.restore_parser)
   def do_restore(self, args):
+    """ restore object from object hist
+    usage:
+      restore [history_index]  -  restore object from history with history_index
+                                  default history_index=-1 (last change)
+                                  examples for history_index:
+                                     0  -> first change
+                                     1  -> second change
+                                    -1  -> last change
+                                    -2  -> last-1 change
+    """
     self._restore(args)
 
 
