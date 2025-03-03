@@ -481,26 +481,11 @@ restoring obj from hist nr. -2
 {
   "a": "b"
 }
-> # restored object will be deleted from object history
-> showhist
-hist Nr. 0 -> 
-{}
-hist Nr. 1 -> 
-{
-  "a": "b",
-  "b": "c"
-}
 > # restore to first change
 > restore 0
 restoring obj from hist nr. 0
 > print
 {}
-> showhist
-hist Nr. 0 -> 
-{
-  "a": "b",
-  "b": "c"
-}
 ```
 examples for history nr (= history index):
 - *0* first change

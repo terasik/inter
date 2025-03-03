@@ -463,7 +463,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     hist_idx=args.hist_idx
     self.poutput("restoring obj from hist nr. %s" % hist_idx)
     self.obj=deepcopy(self.obj_hist[hist_idx])
-    del self.obj_hist[hist_idx]
+    #del self.obj_hist[hist_idx]
     self.changed=True
     
 
