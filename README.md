@@ -502,4 +502,10 @@ hist Nr. 0 ->
   "b": "c"
 }
 ```
+examples for history nr (= history index):
+- *0* first change
+- *1* second change
+- *-1* last change (default value for *restore* command)
+- *-2* last-1 change
+...
 
