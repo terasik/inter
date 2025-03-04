@@ -88,8 +88,20 @@ def dump_yaml(obj, path):
   with open(path, 'w') as _fw:
     _fw.write(yaml.dump(obj, Dumper=get_cipher_dumper()))
 
-def gen_passwd(l=17):
-  a = string.ascii_letters + \
-      string.digits + \
-      "#!_@%"
-  p = ''.join(secrets.choice(a) for i in range(l)) 
+def gen_secrets(**kwargs):
+  """ generate password(s)
+  or url safe token(s)
+  """
+  secs=[]
+  token=kwargs.get("token", False)
+  length=kwargs.get("length", 17)
+  count=kwargs.get("count", 1)
+  for _ in range(count):
+    if not token:
+      a = string.ascii_letters + \
+          string.digits + \
+          "#_@%"
+      secs.append(''.join(secrets.choice(a) for i in range(length))) 
+    else:
+      secs.append(secrets.token_urlsafe())
+  return secs

@@ -19,6 +19,7 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
   - *save* - saving json or yaml objects to file
   - *close* - closing object (with save or without saving it)
   - *version* - print version of obed package/script
+  - *gensec* - generate password(s) or url safe token(s)
 - supporting ansible vault yaml values (**works only with yaml objects**)
   - *vault* - handling vault ids and vault passwords
   - *setval_vault* - setting vault values
@@ -27,7 +28,6 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
 
 ## TODO's
 - documentation
-- generate passwords
 
 ## examples/usage
 for next steps: 

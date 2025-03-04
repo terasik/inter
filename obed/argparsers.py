@@ -222,3 +222,20 @@ class ObedArgParsers:
                               type=int,
                               choices_provider=hist_choice_provider)
                               
+  # genpasswd command parser
+  gensec_parser=cmd2.Cmd2ArgumentParser()
+  gensec_group=gensec_parser.add_mutually_exclusive_group()
+  gensec_parser.add_argument('-c', '--count',
+                              help="count of generated secrets",
+                              type=int,
+                              default=1,
+                              choices=range(1,10))
+  gensec_group.add_argument('-l', '--length',
+                                help="length of password",
+                                type=int,
+                                default=17,
+                                choices=range(1,50))
+  gensec_group.add_argument('-t', '--token',
+                            help="generate url safe token",
+                            action="store_true")
+
