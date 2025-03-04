@@ -13,6 +13,7 @@ import sys
 import re
 import os
 from time import sleep
+from copy import deepcopy
 import yaml
 import cmd2
 from obed.objwalk import ObjWalk
@@ -49,13 +50,13 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.changed=False
     self.obj_type=None  
     
-  def hist_choice_provider(self):
-    """ showhist choice provider
-    used for tab completion
-    return numbers of object history array
-    """
-    l=len(self.obj_hist)
-    return [str(x) for x in range(l)]
+#  def hist_choice_provider(self):
+#    """ showhist choice provider
+#    used for tab completion
+#    return numbers of object history array
+#    """
+#    l=len(self.obj_hist)
+#    return [str(x) for x in range(l)]
 
   def object_choice_provider(self):
     """ returns elements path of object
@@ -185,6 +186,11 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     usage:
       showhist              - show all object history entries
       showhist [nr [nr..]]  - show certain object history entries
+                              examples for nr:
+                                0 -> first change
+                                1 -> second change
+                               -1 -> last change
+                               -2 -> last-1 change
     """
     if args:
       for c in args:
@@ -449,6 +455,35 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
         sleep(sec_to_sleep)
     else:
       sleep(1)
+
+  ######################### restore ######################
+  @open_at_first
+  def _restore(self, args):
+    """ restor help function
+    current object will be saved and after restore
+    appended to object history
+    """
+    hist_idx=args.hist_idx
+    self.poutput("restoring obj from hist nr. %s" % hist_idx)
+    curr_obj=deepcopy(self.obj)
+    self.obj=deepcopy(self.obj_hist[hist_idx])
+    self.obj_hist.append(curr_obj)
+    self.changed=True
+    
+
+  @cmd2.with_argparser(ObedArgParsers.restore_parser)
+  def do_restore(self, args):
+    """ restore object from object hist
+    usage:
+      restore [history_index]  -  restore object from history with history_index
+                                  default history_index=-1 (last change)
+                                  examples for history_index:
+                                     0  -> first change
+                                     1  -> second change
+                                    -1  -> last change
+                                    -2  -> last-1 change
+    """
+    self._restore(args)
 
 
 def run():
