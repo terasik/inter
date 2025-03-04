@@ -1,8 +1,12 @@
 """
 modul with helper functions
 - loading, dumping json objects
+- yaml vault dumpers
+- generating password
 """
 import json
+import string
+import secrets
 import yaml
 from obed.yavault import get_plain_dumper,get_cipher_dumper
 
@@ -84,3 +88,8 @@ def dump_yaml(obj, path):
   with open(path, 'w') as _fw:
     _fw.write(yaml.dump(obj, Dumper=get_cipher_dumper()))
 
+def gen_passwd(l=17):
+  a = string.ascii_letters + \
+      string.digits + \
+      "#!_@%"
+  p = ''.join(secrets.choice(a) for i in range(l)) 
