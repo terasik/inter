@@ -17,7 +17,7 @@ from copy import deepcopy
 import yaml
 import cmd2
 from obed.objwalk import ObjWalk
-from obed.utils import obj_dumps, convert_to_json, load_json, dump_json, dump_yaml
+from obed.utils import obj_dumps, convert_to_json, load_json, dump_json, dump_yaml, gen_secrets
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
 from obed.secrets import ObedVault
@@ -469,7 +469,6 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self.obj=deepcopy(self.obj_hist[hist_idx])
     self.obj_hist.append(curr_obj)
     self.changed=True
-    
 
   @cmd2.with_argparser(ObedArgParsers.restore_parser)
   def do_restore(self, args):
@@ -486,6 +485,20 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     self._restore(args)
 
 
+  ######################### gen secret ######################
+  @cmd2.with_argparser(ObedArgParsers.gensec_parser)
+  def do_gensec(self, args):
+    """ generate password, token
+    usage:
+      gensec            - generate one password with length=17
+      gensec -l 25      - generate one password with length=25
+      gensec -c 3       - generate 3 passwords
+      gensec -t         - generate one url safe token
+    """
+    secs=gen_secrets(**vars(args))
+    for c, v in enumerate(secs):
+      self.poutput("%s: %s" % (c, v))
+    
 def run():
   """ enter the void """
   c = Obed()

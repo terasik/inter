@@ -19,6 +19,7 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
   - *save* - saving json or yaml objects to file
   - *close* - closing object (with save or without saving it)
   - *version* - print version of obed package/script
+  - *gensec* - generate password(s) or url safe token(s)
 - supporting ansible vault yaml values (**works only with yaml objects**)
   - *vault* - handling vault ids and vault passwords
   - *setval_vault* - setting vault values
@@ -27,7 +28,6 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
 
 ## TODO's
 - documentation
-- generate passwords
 
 ## examples/usage
 for next steps: 
@@ -494,3 +494,22 @@ examples for history nr (= history index):
 - *-2* last-1 change
 ...
 
+### generate secrets
+to generate password or url-safe tokens use *gensec* command. usage:
+```
+gensec [-c COUNT] [-l LENGTH] [-t] 
+```
+options of *gensec* command:
+- *-c*, *--count* - number of generated passwords/tokens. (default: 1, max: 10)
+- *-l*, *--length* - length of generated password(s). (default: 17, max: 49)
+  - don't work with *-t* option
+- *-t*, *--token* - generate url-safe token(s)
+
+examples:
+```
+> gensec -c 2 -l 23
+0: FA9MwbCgmYr1uvePckWX3@
+1: 0fkaf_CXJSe%BseyqOoTKL
+> gensec -t
+0: 3EvspWn_6TkP3BXoYSywDCiTAvUHZzbHfWY1FIiz2GE
+```
