@@ -1,0 +1,85 @@
+# show commands
+set echo true
+
+# new json object
+new -j
+print
+wait
+
+# setting new key=name to value="fimorius barborius"
+setval name -v "fimorius barborius"
+print
+wait
+
+# setting new empty list
+setval books -v []
+print
+wait
+
+# append new book to books list
+append books -v '{"year": 1964, "author": {"name": "karamunga", "lastname": "beret"}, "with_love": true, "from space": "i dont know"}'
+print
+wait
+
+# delete "from space" element from first book in the books list
+delete "books[0]:from space"
+print
+wait
+
+# append new book again but without author
+append books -v '{"year": 1976, "with_love": false, "author":""}'
+print
+wait
+
+# copy author from first book to second
+copy books[0]:author -d books[1]:author
+print 
+wait
+
+# change year of the second book and print years of books
+setval books[1]:year -v 1977
+print books[1]:year books[0]:year
+wait
+
+# create new list
+setval rings -v []
+print
+wait
+
+# appending more than 1 values
+append books rings -v "alive" '{"day": "yesterday", "abc": ["uzt", 1234, true]}'
+print
+wait
+
+# setting value to more than 1 element
+setval name rings[0] rings[1]:abc -v pirogov
+print
+wait
+
+# setval take value(s) from another element
+setval books -t rings[1]:day
+print 
+wait
+
+# append take value(s) from another elemnt
+append rings -t name
+print
+wait
+
+# show some object changes with showhist
+showhist 0 3
+wait
+
+# save object to file as json
+save myobject.json
+wait
+
+# save same object to file as yaml
+save myobject.yaml -t yaml
+wait
+
+# bye, bye
+close
+
+# show saved files with shell
+!cat myobject.yaml

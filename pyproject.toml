@@ -29,3 +29,7 @@ Issues = "https://github.com/terasik/inter"
 
 [project.scripts]
 obed = "obed.obed:run"
+
+[tool.setuptools.package-data]
+"obed.examples" = [*]
+

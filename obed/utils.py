@@ -4,10 +4,12 @@ modul with helper functions
 - yaml vault dumpers
 - generating password
 """
+import os
 import json
 import string
 import secrets
 import yaml
+from importlib_resources import files as pkg_files    
 from obed.yavault import get_plain_dumper,get_cipher_dumper
 
 def convert_to_json(value, check_type=False, raise_error=False):
@@ -105,3 +107,15 @@ def gen_secrets(**kwargs):
     else:
       secs.append(secrets.token_urlsafe())
   return secs
+
+def handle_examples(conf_dir="~/.obed"):
+  """ write example files to conf_dir
+  """
+  conf_dir=os.path.expanduser(conf_dir)
+  try:
+    if not os.path.isdir(conf_dir):
+      os.makedirs(conf_dir)
+    
+    data_text = files('obed.examples').joinpath('data1.txt').read_text()
+  except Exception as exc:
+    print("error with handling example files. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))   
