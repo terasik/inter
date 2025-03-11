@@ -8,9 +8,12 @@ import os
 import json
 import string
 import secrets
+from pathlib import Path
+from shutil import copy2
 import yaml
-from importlib_resources import files as pkg_files    
+from importlib_resources import files as example_files    
 from obed.yavault import get_plain_dumper,get_cipher_dumper
+from obed.decors import expand_user
 
 def convert_to_json(value, check_type=False, raise_error=False):
   """ try to convert value to json
@@ -40,6 +43,7 @@ def convert_to_json(value, check_type=False, raise_error=False):
     raise TypeError("json is not dict or list")
   return js
 
+@expand_user
 def load_json(path):
   """ load json file
 
@@ -69,6 +73,7 @@ def obj_dumps(obj, obj_type="json"):
     s=None
   return s
 
+@expand_user
 def dump_json(obj, path):
   """ write obj to path as json
   params:
@@ -111,11 +116,15 @@ def gen_secrets(**kwargs):
 def handle_examples(conf_dir="~/.obed"):
   """ write example files to conf_dir
   """
-  conf_dir=os.path.expanduser(conf_dir)
+  conf_path=Path.expanduser(Path(conf_dir))
   try:
-    if not os.path.isdir(conf_dir):
-      os.makedirs(conf_dir)
-    
-    data_text = files('obed.examples').joinpath('data1.txt').read_text()
+    conf_path.mkdir(parents=True,exist_ok=True)
+    example_dir = example_files('obed.examples')
+    for src in example_dir.iterdir():
+      dest=conf_path.joinpath(src.name)
+      print("info: copy %s to %s" % (src, dest))
+      copy2(src, dest)
   except Exception as exc:
-    print("error with handling example files. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))   
+    print("error while handling example files. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))   
+  else:
+    print("info: all example files copied to %s" % conf_path)

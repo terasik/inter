@@ -17,7 +17,7 @@ from copy import deepcopy
 import yaml
 import cmd2
 from obed.objwalk import ObjWalk
-from obed.utils import obj_dumps, convert_to_json, load_json, dump_json, dump_yaml, gen_secrets
+from obed.utils import obj_dumps, convert_to_json, load_json, dump_json, dump_yaml, gen_secrets, handle_examples
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
 from obed.secrets import ObedVault
@@ -498,11 +498,14 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
     secs=gen_secrets(**vars(args))
     for c, v in enumerate(secs):
       self.poutput("%s: %s" % (c, v))
-    
+   
+ 
 def run():
   """ enter the void """
+  handle_examples()
   c = Obed()
   sys.exit(c.cmdloop())
+
 
 if __name__ == '__main__':
   run()

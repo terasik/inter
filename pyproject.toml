@@ -4,12 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "obed"
-version = "0.2.7"
+version = "0.2.8"
 dependencies = [
   "cmd2",
   "jmespath",
   "ansible-vault",
-  "PyYAML"
+  "PyYAML",
+  "importlib_resources"
 ]
 authors = [
   { name="terasik" },
@@ -31,5 +32,5 @@ Issues = "https://github.com/terasik/inter"
 obed = "obed.obed:run"
 
 [tool.setuptools.package-data]
-"obed.examples" = [*]
+"obed.examples" = ["*"]
 
