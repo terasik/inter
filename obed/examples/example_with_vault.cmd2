@@ -2,7 +2,7 @@
 set echo true
 
 # open yaml file
-open inter/examples/example.yml
+open ~/.obed/example.yml
 print
 wait
 

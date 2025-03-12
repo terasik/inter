@@ -26,10 +26,12 @@ project for interactive editing json or yaml objects. based on *cmd2* package. t
   - *append_vault* - appending valut values to list
 - supporting also all *cmd2* commands (*shell*, *alias*, ...)
 
-## TODO's
-- documentation
+## TODO's for future
+- run default skript at startup
 
 ## examples/usage
+some example files you can find in *~/.obed/* directory after first start of *obed* script
+
 for next steps: 
 -  example json object (*example.json* file):
 ```json

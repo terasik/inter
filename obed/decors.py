@@ -24,10 +24,10 @@ def close_at_first(f):
 
 def expand_user(f):
   def inner(*args):
-    print("len args %s" % len(args))
-    new_args=args
+    #print("len args %s" % len(args))
+    new_args=list(args)
     try:
-      print(new_args)
+      #print(new_args)
       new_args[-1]=os.path.expanduser(args[-1])
     except:
       pass

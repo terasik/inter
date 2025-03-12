@@ -4,6 +4,8 @@ modul with helper functions
 - yaml vault dumpers
 - generating password
 """
+__all__=["convert_to_json", "load_json", "obj_dumps", "load_yaml", "dump_json", "dump_yaml", "gen_secrets", "handle_examples"]
+
 import os
 import json
 import string
@@ -12,7 +14,7 @@ from pathlib import Path
 from shutil import copy2
 import yaml
 from importlib_resources import files as example_files    
-from obed.yavault import get_plain_dumper,get_cipher_dumper
+from obed.yavault import get_plain_dumper,get_cipher_dumper,get_loader
 from obed.decors import expand_user
 
 def convert_to_json(value, check_type=False, raise_error=False):
@@ -52,10 +54,23 @@ def load_json(path):
   return:
     js: json -> loaded json object
   """
-  with open(path) as _fr:
-    js=json.load(_fr)
+  with open(path) as f:
+    js=json.load(f)
   return js
 
+@expand_user
+def load_yaml(path):
+  """ load yaml file
+
+  params:
+    path: str -> path to yaml file
+  return:
+    y: dict,list -> loaded yaml object
+  """
+  with open(path) as f:
+    y=yaml.load(f, Loader=get_loader())  
+  return y
+   
 def obj_dumps(obj, obj_type="json"):
   """ return indentet json object
   as string. converting to ascii is disabled
@@ -84,7 +99,7 @@ def dump_json(obj, path):
   with open(path, 'w') as _fw:
     json.dump(obj, _fw, indent=2, ensure_ascii=False)
 
-
+@expand_user
 def dump_yaml(obj, path):
   """ write obj to path as json
   params:
@@ -122,9 +137,9 @@ def handle_examples(conf_dir="~/.obed"):
     example_dir = example_files('obed.examples')
     for src in example_dir.iterdir():
       dest=conf_path.joinpath(src.name)
-      print("info: copy %s to %s" % (src, dest))
+      #print("info: copy %s to %s" % (src, dest))
       copy2(src, dest)
   except Exception as exc:
     print("error while handling example files. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))   
   else:
-    print("info: all example files copied to %s" % conf_path)
+    print("all example files copied to %s" % conf_path)

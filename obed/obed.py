@@ -17,11 +17,11 @@ from copy import deepcopy
 import yaml
 import cmd2
 from obed.objwalk import ObjWalk
-from obed.utils import obj_dumps, convert_to_json, load_json, dump_json, dump_yaml, gen_secrets, handle_examples
+from obed.utils import *
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
 from obed.secrets import ObedVault
-from obed.yavault import get_loader,VaultData
+from obed.yavault import VaultData
 
 class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
@@ -119,10 +119,9 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       self.obj_type="json"
     except:
       try:
-        with open(args.file[0]) as f:
-          obj=yaml.load(f, Loader=get_loader())
+        obj=load_yaml(args.file[0])
         if not isinstance(obj, (dict,list)):
-          raise TypeError
+          raise TypeError("yaml loaded object is not instance of list or dict")
         self.obj_type="yaml"
         self.psuccess("loaded file as yaml")
       except:
