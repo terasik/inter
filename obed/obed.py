@@ -21,7 +21,7 @@ from obed.utils import *
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
 from obed.secrets import ObedVault
-from obed.yavault import VaultData
+from obed.yavault import VaultData, get_loader
 
 class Obed(ObjWalk, ObedArgParsers, ObedVault):
 
