@@ -160,7 +160,7 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
       self.poutput("saving object as yaml to %s" % file_to_write)
       dump_yaml(self.obj, file_to_write)
     else:
-      self.perror("which type of object i should use to save this object...")
+      self.perror("which type of object should be used to save this object...")
       return 
     self.changed=False
       
@@ -222,13 +222,21 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
                         completion_mode=cmd2.CompletionMode.CUSTOM, 
                         choices=["yes", "no"])
       if re.match("yes|ja|y|j", i, re.I):
-        i=self.read_input("saving object to: ", 
+        if not self.wrk_file: 
+          file_to_write=self.read_input("saving object to: ", 
                           completion_mode=cmd2.CompletionMode.CUSTOM, 
                           completer=cmd2.Cmd.path_complete)
-        if self.obj_type=="yaml":
-          self.do_save_yaml(i)
         else:
-          self.do_save(i)
+          file_to_write=self.wrk_file
+        if self.obj_type=="json":
+          self.poutput("saving object as json to %s" % file_to_write)
+          dump_json(self.obj, file_to_write)
+        elif self.obj_type=="yaml":
+          self.poutput("saving object as yaml to %s" % file_to_write)
+          dump_yaml(self.obj, file_to_write)
+        else:
+          self.perror("which type of object should be used to save this object...")
+          return 
       elif re.match("no|nein|n", i, re.I):
         self.poutput("don't saving any changes")
       else:
