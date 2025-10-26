@@ -10,6 +10,7 @@ import os
 import json
 import string
 import secrets
+import subprocess
 from pathlib import Path
 from shutil import copy2
 import yaml
@@ -83,7 +84,12 @@ def obj_dumps(obj, obj_type="json"):
   if obj_type=="json":
     s=json.dumps(obj, indent=2, ensure_ascii=False)
   elif obj_type=="yaml":
-    s=yaml.dump(obj, Dumper=get_plain_dumper(), explicit_end=False, indent=2, default_style='')
+    s=yaml.dump(obj, Dumper=get_plain_dumper(), 
+                explicit_end=False, 
+                explicit_start=True, 
+                indent=2, 
+                default_style='', 
+                allow_unicode=True)
   else:
     s=None
   return s
@@ -108,7 +114,10 @@ def dump_yaml(obj, path):
   return: -
   """
   with open(path, 'w') as _fw:
-    _fw.write(yaml.dump(obj, Dumper=get_cipher_dumper()))
+    _fw.write(yaml.dump(obj, 
+                        Dumper=get_cipher_dumper(), 
+                        explicit_start=True, 
+                        allow_unicode=True))
 
 def gen_secrets(**kwargs):
   """ generate password(s)
@@ -143,3 +152,30 @@ def handle_examples(conf_dir="~/.obed"):
     print("error while handling example files. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))   
   else:
     print("all example files copied to %s" % conf_path)
+
+def handle_tty(action):
+  """ save/restore tty config to avoid 
+  problems with some terminals
+  """
+  stty_config_file=".obed_stty.config"
+  if action=="save":
+    try:
+      print("backup tty config")
+      with open(stty_config_file, "w") as fw:
+        r=subprocess.run(["stty", "-g"], 
+                          timeout=5,
+                          stdout=fw,
+                          check=True)
+    except Exception as exc:
+      print("error while saving tty settings. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))
+  else:
+    try:
+      print("restoring tty config")
+      with open(stty_config_file, "r") as fr:
+        r=subprocess.run(["stty", f"{fr.read().strip()}"], 
+                          timeout=5,
+                          check=True)
+    except Exception as exc:
+      print("error while restoring tty. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))
+
+
