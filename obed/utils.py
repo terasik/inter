@@ -4,7 +4,7 @@ modul with helper functions
 - yaml vault dumpers
 - generating password
 """
-__all__=["convert_to_json", "load_json", "obj_dumps", "load_yaml", "dump_json", "dump_yaml", "gen_secrets", "handle_examples"]
+__all__=["convert_to_json", "load_json", "obj_dumps", "load_yaml", "dump_json", "dump_yaml", "gen_secrets", "handle_examples", "handle_tty", "sigterm_handler"]
 
 import os
 import json
@@ -178,4 +178,10 @@ def handle_tty(action):
     except Exception as exc:
       print("error while restoring tty. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))
 
+
+def sigterm_handler(signum, frame):
+  """ capture SIGTERM to restore tty config
+  """
+  print("handling SIGTERM")
+  handle_tty("restore")
 

@@ -509,9 +509,17 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
  
 def run():
   """ enter the void """
+  handle_tty("save")
   handle_examples()
-  c = Obed()
-  sys.exit(c.cmdloop())
+  rc=1
+  try:
+    c = Obed()
+    rc=c.cmdloop()
+  except Exception as exc:
+    print(f"something in the way... {type(exc).__name__}: {exc}") 
+  finally:
+    handle_tty("restore")
+    sys.exit(rc)
 
 
 if __name__ == '__main__':
