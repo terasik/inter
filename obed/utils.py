@@ -4,184 +4,199 @@ modul with helper functions
 - yaml vault dumpers
 - generating password
 """
-__all__=["convert_to_json", "load_json", "obj_dumps", "load_yaml", "dump_json", "dump_yaml", "gen_secrets", "handle_examples", "handle_tty", "sigterm_handler"]
+__all__=["convert_to_json", "load_json", "obj_dumps",
+         "load_yaml", "dump_json", "dump_yaml",
+         "gen_secrets", "handle_examples", "handle_tty",
+         "sigterm_handler"]
 
 import os
+import re
 import json
 import string
 import secrets
 import subprocess
+import platform
 from pathlib import Path
 from shutil import copy2
+from importlib_resources import files as example_files
 import yaml
-from importlib_resources import files as example_files    
 from obed.yavault import get_plain_dumper,get_cipher_dumper,get_loader
 from obed.decors import expand_user
+from obed.defs import DEF_PASSWD_LEN
 
 def convert_to_json(value, check_type=False, raise_error=False):
-  """ try to convert value to json
-  if it doesn't work and check_type is false return value.
+    """ try to convert value to json
+    if it doesn't work and check_type is false return value.
 
-  when check_type is true, check of value type
-  will be performed. if type of value is not list or 
-  dict raise TypeError 
+    when check_type is true, check of value type
+    will be performed. if type of value is not list or
+    dict raise TypeError
   
-  params:
-    value: obj -> value that will be converted to json
-    check_type: bool -> if true check type of value.
+    params:
+        value: obj -> value that will be converted to json
+        check_type: bool -> if true check type of value.
                         when type of value is not list,dict
                         raise TypeError
-    raise_error: bool -> raise errors. will be automatically 
+        raise_error: bool -> raise errors. will be automatically
                         set to True if check_type is True
-  """
-  if check_type: 
-    raise_error=True
-  try:
-    js=json.loads(value)
-  except (json.JSONDecodeError, TypeError) as exc:
-    if raise_error:
-      raise ValueError("json error: %s" % exc)
-    return value
-  if check_type and not isinstance(js, (list,dict)):
-    raise TypeError("json is not dict or list")
-  return js
+    """
+    if check_type:
+        raise_error=True
+    try:
+        js=json.loads(value)
+    except (json.JSONDecodeError, TypeError) as exc:
+        if raise_error:
+            raise ValueError(f"json error: {exc}") from exc
+        return value
+    if check_type and not isinstance(js, (list,dict)):
+        raise TypeError("json is not dict or list")
+    return js
 
 @expand_user
 def load_json(path):
-  """ load json file
+    """ load json file
 
-  params:
-    path: str -> path to json file
-  return:
-    js: json -> loaded json object
-  """
-  with open(path) as f:
-    js=json.load(f)
-  return js
+    params:
+        path: str -> path to json file
+    return:
+        js: json -> loaded json object
+    """
+    with open(path) as f:
+        js=json.load(f)
+    return js
 
 @expand_user
 def load_yaml(path):
-  """ load yaml file
+    """ load yaml file
 
-  params:
-    path: str -> path to yaml file
-  return:
-    y: dict,list -> loaded yaml object
-  """
-  with open(path) as f:
-    y=yaml.load(f, Loader=get_loader())  
-  return y
+    params:
+        path: str -> path to yaml file
+    return:
+        y: dict,list -> loaded yaml object
+    """
+    with open(path) as f:
+        y=yaml.load(f, Loader=get_loader())
+    return y
    
 def obj_dumps(obj, obj_type="json"):
-  """ return indentet json object
-  as string. converting to ascii is disabled
+    """ return indentet json object
+    as string. converting to ascii is disabled
 
-  params: 
-    obj: json -> object to dump
-  return: 
-    s: str -> object as json string
-  """
-  if obj_type=="json":
-    s=json.dumps(obj, indent=2, ensure_ascii=False)
-  elif obj_type=="yaml":
-    s=yaml.dump(obj, Dumper=get_plain_dumper(), 
-                explicit_end=False, 
-                explicit_start=True, 
-                indent=2, 
-                default_style='', 
+    params:
+        obj: json -> object to dump
+    return:
+        s: str -> object as json string
+    """
+    if obj_type=="json":
+        s=json.dumps(obj, indent=2, ensure_ascii=False)
+    elif obj_type=="yaml":
+        s=yaml.dump(obj, Dumper=get_plain_dumper(),
+                explicit_end=False,
+                explicit_start=True,
+                indent=2,
+                default_style='',
                 allow_unicode=True)
-  else:
-    s=None
-  return s
+    else:
+        s=None
+    return s
 
 @expand_user
 def dump_json(obj, path):
-  """ write obj to path as json
-  params:
-    obj: json -> json object to write
-    path: str -> path to file where obj will be written
-  return: -
-  """
-  with open(path, 'w') as _fw:
-    json.dump(obj, _fw, indent=2, ensure_ascii=False)
+    """ write obj to path as json
+    params:
+        obj: json -> json object to write
+        path: str -> path to file where obj will be written
+    return: -
+    """
+    with open(path, 'w') as _fw:
+        json.dump(obj, _fw, indent=2, ensure_ascii=False)
 
 @expand_user
 def dump_yaml(obj, path):
-  """ write obj to path as json
-  params:
-    obj: yaml -> yaml object to write
-    path: str -> path to file where obj will be written
-  return: -
-  """
-  with open(path, 'w') as _fw:
-    _fw.write(yaml.dump(obj, 
-                        Dumper=get_cipher_dumper(), 
-                        explicit_start=True, 
+    """ write obj to path as json
+    params:
+        obj: yaml -> yaml object to write
+        path: str -> path to file where obj will be written
+    return: -
+    """
+    with open(path, 'w') as _fw:
+        _fw.write(yaml.dump(obj,
+                        Dumper=get_cipher_dumper(),
+                        explicit_start=True,
                         allow_unicode=True))
 
 def gen_secrets(**kwargs):
-  """ generate password(s)
-  or url safe token(s)
-  """
-  secs=[]
-  token=kwargs.get("token", False)
-  length=kwargs.get("length", 17)
-  count=kwargs.get("count", 1)
-  for _ in range(count):
-    if not token:
-      a = string.ascii_letters + \
-          string.digits + \
-          "#_@%"
-      secs.append(''.join(secrets.choice(a) for i in range(length))) 
-    else:
-      secs.append(secrets.token_urlsafe())
-  return secs
+    """ generate password(s)
+    or url safe token(s)
+    """
+    secs=[]
+    token=kwargs.get("token", False)
+    length=kwargs.get("length", DEF_PASSWD_LEN)
+    count=kwargs.get("count", 1)
+    for _ in range(count):
+        if not token:
+            a = string.ascii_letters + \
+                string.digits + \
+                "__"
+            secs.append(''.join(secrets.choice(a) for i in range(length)))
+        else:
+            secs.append(secrets.token_urlsafe())
+    return secs
 
 def handle_examples(conf_dir="~/.obed"):
-  """ write example files to conf_dir
-  """
-  conf_path=Path.expanduser(Path(conf_dir))
-  try:
-    conf_path.mkdir(parents=True,exist_ok=True)
-    example_dir = example_files('obed.examples')
-    for src in example_dir.iterdir():
-      dest=conf_path.joinpath(src.name)
-      #print("info: copy %s to %s" % (src, dest))
-      copy2(src, dest)
-  except Exception as exc:
-    print("error while handling example files. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))   
-  else:
-    print("all example files copied to %s" % conf_path)
+    """ write example files to conf_dir
+    """
+    conf_path=Path.expanduser(Path(conf_dir))
+    try:
+        conf_path.mkdir(parents=True,exist_ok=True)
+        example_dir = example_files('obed.examples')
+        for src in example_dir.iterdir():
+            dest=conf_path.joinpath(src.name)
+            #print("info: copy %s to %s" % (src, dest))
+            copy2(src, dest)
+    except Exception as exc:
+        print(f"error while handling example files. \
+                exception type='{type(exc).__name__}'. \
+                exception message='{exc}'")
+    else:
+        print(f"all example files copied to {conf_path}")
 
 def handle_tty(action):
-  """ save/restore tty config to avoid 
-  problems with some terminals
-  """
-  stty_config_file=".obed_stty.config"
-  if action=="save":
-    try:
-      print("backup tty config")
-      with open(stty_config_file, "w") as fw:
-        r=subprocess.run(["stty", "-g"], 
+    """ save/restore tty config to avoid
+    problems with some terminals
+    """
+    if re.search(r'windows', platform.system(), re.I):
+        return
+    home_dir=os.path.expanduser("~")+os.path.sep
+    stty_config_file=f"{home_dir}.obed_stty.config"
+    if action=="save":
+        try:
+            #print("backup tty config..")
+            with open(stty_config_file, "w") as fw:
+                subprocess.run(["stty", "-g"],
                           timeout=5,
                           stdout=fw,
                           check=True)
-    except Exception as exc:
-      print("error while saving tty settings. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))
-  else:
-    try:
-      print("restoring tty config")
-      with open(stty_config_file, "r") as fr:
-        r=subprocess.run(["stty", f"{fr.read().strip()}"], 
+        except Exception as exc:
+            print(f"error while saving tty settings. \
+                    exception type='{type(exc).__name__}'. \
+                    exception message='exc'")
+    else:
+        try:
+            print("restoring tty config..")
+            with open(stty_config_file, "r") as fr:
+                subprocess.run(["stty", f"{fr.read().strip()}"],
                           timeout=5,
                           check=True)
-    except Exception as exc:
-      print("error while restoring tty. exception type='%s'. exception message='%s'" % (type(exc).__name__, exc))
+        except Exception as exc:
+            print(f"error while restoring tty settings. \
+                    exception type='{type(exc).__name__}'. \
+                    exception message='exc'")
 
 
 def sigterm_handler(signum, frame):
-  """ capture SIGTERM to restore tty config
-  """
-  print("handling SIGTERM")
-  handle_tty("restore")
+    """ capture SIGTERM to restore tty config
+    """
+    print(f"handling SIGTERM (signum={signum} frame={frame})")
+    handle_tty("restore")
 
