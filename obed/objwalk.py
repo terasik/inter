@@ -14,7 +14,7 @@ from obed.yavault import YamlVault
 
 class PrepObj:
 
-    def __init__(self, opath="")
+    def __init__(self, opath=""):
         pass
 
 class ObjWalk(cmd2.Cmd):

@@ -5,7 +5,7 @@ modul for handling ansible vault yaml
 import yaml
 import logging
 #from ansible_vault import Vault
-from ansivault import Vault
+from obed.ansivault import Vault
 
 class VaultError(Exception):
     """ Vault Error """

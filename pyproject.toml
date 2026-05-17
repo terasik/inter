@@ -8,21 +8,18 @@ version = "0.3.0"
 dependencies = [
   "cmd2",
   "jmespath",
-  "ansivault",
+  "cryptography",
   "PyYAML",
   "importlib_resources"
 ]
 authors = [
   { name="terasik" },
 ]
-description = "interactiv object edit"
+description = "interactive object edit"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
 
