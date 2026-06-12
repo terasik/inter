@@ -17,7 +17,7 @@ from copy import deepcopy
 from importlib.metadata import version
 import yaml
 import cmd2
-from obed.objwalk import ObjWalk
+from obed.objaction import ObjAction
 from obed.utils import *
 from obed.argparsers import ObedArgParsers
 from obed.decors import *
@@ -31,10 +31,10 @@ else:
         CMD2_NEW=True
 
 
-class Obed(ObjWalk, ObedArgParsers, ObedVault):
+class Obed(ObjAction, ObedArgParsers, ObedVault):
 
     """ Obed class inherits from
-    ObjWalk - with methods from cmd2.Cmd class and functions
+    ObjAction - with methods from cmd2.Cmd class and functions
                         to handle with obj tabcompletion and values
     ObedArgParsers - class with cmd2.Cmd2ArgumentParser definitions
                         for a lot of implemented commands
@@ -412,25 +412,6 @@ class Obed(ObjWalk, ObedArgParsers, ObedVault):
         """ append vault value of object element """
         #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
         self._append_vault(args)
-
-
-    ###################### copy elements ########################
-    @open_at_first
-    def _copy(self, args):
-        """ copy obj elements to other obj elements  """
-        for ele in args.elements:
-            for dest in args.dest:
-                #self.poutput("copy element %s to dest %s" % (ele, dest))
-                self.copy_element(ele, dest)
-        self.changed=True
-
-    @cmd2.with_argparser(ObedArgParsers.copy_parser)
-    def do_copy(self, args):
-        """ copy obj elements to other obj elements  """
-        #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
-        #if not args.dest:
-        #  args.dest=[""]
-        self._copy(args)
 
 
     ###################### vault ########################

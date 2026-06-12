@@ -142,17 +142,6 @@ class ObedArgParsers:
                                     choices_provider=vault_choice_provider)
 
 
-    # copy cmd parser
-    copy_parser=cmd2.Cmd2ArgumentParser()
-    copy_parser.add_argument('elements', 
-                            help='object element(s)', 
-                            nargs='+', 
-                            choices_provider=object_choice_provider)
-    copy_parser.add_argument('-d', '--dest', 
-                            nargs='*', 
-                            help='destionations where elements should be copied', 
-                            choices_provider=object_choice_provider)
-
     # close parser
     close_parser=cmd2.Cmd2ArgumentParser()
     close_group=close_parser.add_mutually_exclusive_group()
