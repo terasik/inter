@@ -10,24 +10,9 @@ import cmd2
 import jmespath
 from obed.utils import convert_to_json
 from obed.yavault import YamlVault
+from obed.objwalk import prep_obj,completion_build
 
 
-
-PrepObj=namedtuple('PrepObj', 'value, key, parent', defaults=("",{}))
-start_obj={
-    "a": { 
-        "a1": 1,
-        "a2": 3 
-        },
-    "b": { "a1": 2 },
-    "b1": [10, 20, [30, {"g": 40}]],
-    "c": "b",
-    "e": { "e1": {"a1": 4}, "e2": 2},
-    "d": {"a1": 3}
-}
-
-search_str="*:[5]"
-splt_search_list=search_str.split(':')
 
 class ObjAction(cmd2.Cmd):
     """ class to walk through (json,yaml) objects 
@@ -51,75 +36,32 @@ class ObjAction(cmd2.Cmd):
         self._obj=obj
         self.build_completion_list()
 
-#    def _prepare_search_string(self, opath=""):
-#        """ convert opath to jmespath query string
-#        params: 
-#            opath: str -> path to object element (ex.: book[0]:id )
-#        return:
-#            opath_search: str -> jmespath query string (ex.: "book"|[0]|"id")
-#        """
-#        opath=re.sub(r"(\[\d+\*\])|:", r"|\1", opath)
-#        opath_search="|".join([f'"{x}"' 
-#                               if not x.startswith('[') and not x=="*" else x 
-#                               for x in opath.split('|') if x])
-#        print(f"---- opath_search: {opath_search}")
-#        return opath_search
-
     def build_completion_list(self):
         """ build completion  list for object paths
         (opath parameters by many functions)
         ['a[0]', 'a[1]', "b", "c", "c:o1", "c:o2", d]
   
         """
-        self.compl_list=self._rec_compl_build(self.obj)
+        self.compl_list=completion_build(self.obj)
 
     def get_value(self, opath=""):
         """ return value of element path (opath)
         """
         if not opath:
             return self.obj
-        opath_search=self._prepare_search_string(opath)
-        return jmespath.search(opath_search, self.obj)
-
-#    def _prepare_obj_for_action(self, opath, only_ref=False):
-#        """ preparing objects for next processing 
-#        (append, delete, setting values ) 
-#        params:
-#            opath: str  -> object element path string (Ex: 'a:b[0]')
-#            only_ref: bool -> if true get element of object 
-#                                which described by opath
-#                              if false return element ob object that 
-#                                will be edited
-#            return: tuppel -> (object element, index_or_key of element)
-#    
-#        """
-#        if not only_ref:
-#            self.obj_hist.append(deepcopy(self.obj))
-#        obj=self.obj
-#        idx_or_key=None
-#        opath_search=self._prepare_search_string(opath)
-#        opath_split=[x for x in opath_search.split('|') if x]
-#        for cnt,ele in enumerate(opath_split):
-#            l=re.match(r"\[(\d+)\]", ele)
-#            d=re.match(r"\"(.+?)\"", ele)
-#            if l:
-#                idx_or_key=int(l.group(1))
-#            else:
-#                idx_or_key=d.group(1)
-#            if (cnt < (len(opath_split)-1)) or only_ref:
-#                obj=obj[idx_or_key]
-#        return (obj, idx_or_key)
+        po=prep_obj(self.obj, opath)
+        return [p.value for p in po]
 
   
-    def _get_object_ref(self, opath=""):
-        """ return reference to object or object element 
-        params:
-            opath: str  -> object element path string (Ex: 'a:b[0]')
-        return:
-            obj: json   -> reference to object or obj element
-        """
-        r=self._prepare_obj_for_action(opath, True)
-        return r[0]
+#    def _get_object_ref(self, opath=""):
+#        """ return reference to object or object element 
+#        params:
+#            opath: str  -> object element path string (Ex: 'a:b[0]')
+#        return:
+#            obj: json   -> reference to object or obj element
+#        """
+#        r=self._prepare_obj_for_action(opath, True)
+#        return r[0]
 
 
     def set_value_vault(self, opath, value, vault_id):

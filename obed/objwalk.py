@@ -25,7 +25,7 @@ def prep_obj(obj, path):
     if not path:
         return obj
     prep_path=_prep_path(path)
-    print(f"---- prep_path: {prep_path}")
+    #print(f"---- prep_path: {prep_path}")
     prep_path=[p for p in prep_path.split('|') if p]
     po=PrepObj(value=obj)
     return _rec_prep_obj([po], prep_path)
@@ -55,7 +55,8 @@ def _rec_prep_obj(obj_list, prep_path, cnt=0, res_list=None):
                     else:
                         r.append(PrepObj(value=value))
             else:
-                print("* but what now?") 
+                #print("* but what now?") 
+                pass
         else:
             # TODO: what to do with other types?
             if isinstance(obj.value, dict):
@@ -71,9 +72,11 @@ def _rec_prep_obj(obj_list, prep_path, cnt=0, res_list=None):
                     idx=int(re.match(r"\[(\d+)\]", expr).group(1))
                     value=obj.value[idx]
                 except (AttributeError,IndexError,ValueError) as _exc:
-                    print(f"idx error, but its ok: {_exc}" )
+                    #print(f"idx error, but its ok: {_exc}" )
+                    pass
                 except Exception as _exc:
-                    print("unknown idx error")
+                    #print("unknown idx error")
+                    pass
                 else: 
                     # if last expression 
                     if cnt == len(prep_path)-1:
@@ -81,7 +84,8 @@ def _rec_prep_obj(obj_list, prep_path, cnt=0, res_list=None):
                     else:
                         r.append(PrepObj(value=value))
             else:
-                print("found something that are not list or dict")
+                #print("found something that are not list or dict")
+                pass
     if cnt < len(prep_path)-1:
         _rec_prep_obj(r, prep_path, cnt+1, res_list)
     return res_list

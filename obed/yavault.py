@@ -16,6 +16,11 @@ class VaultData:
     """
     vault_data={}
 
+class IndentDumper(yaml.SafeDumper):
+    def increase_indent(self, flow=False, indentless=False):
+        return super(IndentDumper, self).increase_indent(flow, False)
+
+
 class YamlVault:
     """ class für yaml vault tag """
     def __init__(self, **kwargs):
@@ -150,7 +155,7 @@ def get_plain_dumper():
     """ plain text dumper. will be used with 
     yaml.dump() function
     """
-    safe_dumper=yaml.SafeDumper
+    safe_dumper=IndentDumper
     safe_dumper.add_representer(YamlVault, vault_plain_representer)
     return safe_dumper
 
@@ -158,7 +163,7 @@ def get_cipher_dumper():
     """ cipher text dumper. will be used with 
     yaml.dump() function
     """
-    safe_dumper=yaml.SafeDumper
+    safe_dumper=IndentDumper
     safe_dumper.add_representer(YamlVault, vault_cipher_representer)
     return safe_dumper
 

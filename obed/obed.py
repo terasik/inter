@@ -300,7 +300,9 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
                     self.poutput(f"{e} ->")
                 else:
                     self.poutput(cmd2.ansi.style("%s -> "%e, fg=cmd2.Fg["LIGHT_BLUE"] ))
-                self.poutput("%s" % obj_dumps(self.get_value(e), self.obj_type))
+                res=self.get_value(e)
+                for r in res:
+                    self.poutput("--> %s" % obj_dumps(r, self.obj_type))
 
     def complete_print(self, text, line, begidx, endidx):
         """ completion for print """
