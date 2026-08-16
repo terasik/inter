@@ -10,7 +10,7 @@ import cmd2
 import jmespath
 from obed.utils import convert_to_json
 from obed.yavault import YamlVault
-from obed.objwalk import prep_obj,completion_build
+from obed.objwalk import prep_obj,completion_build, oact
 
 
 
@@ -23,6 +23,7 @@ class ObjAction(cmd2.Cmd):
     """
     def __init__(self, obj=None):
         super().__init__()
+        self.readonly=False
         self.coml_list=[]
         self.obj=obj
         self.obj_hist=deque([], 50)
@@ -35,6 +36,7 @@ class ObjAction(cmd2.Cmd):
     def obj(self, obj):
         self._obj=obj
         self.build_completion_list()
+
 
     def build_completion_list(self):
         """ build completion  list for object paths
@@ -91,24 +93,40 @@ class ObjAction(cmd2.Cmd):
             self.obj.append(value)
         self.build_completion_list()
           
-    def set_value(self, opath ="", value=None):
+
+#    def set_value(self, opath ="", value=None):
+#        """ setting value of object or object element
+#        params:
+#            opath: str  -> object element path string (Ex: 'a:b[0]')
+#            value: obj -> value to be set
+#        return: -
+#        """
+#        #if opath:
+#        #    value=convert_to_json(value)
+#        #else:
+#            # also check if value is list or dict
+#        value=convert_to_json(value)
+#        po=prep_obj(self.obj, opath)
+#        if opath:
+#            for p in po:
+#                p.parent[p.key]=value
+#            #self.build_completion_list()
+#        else:
+#            self.obj=value
+#        self.compl_list=completion_build(self.obj)
+    @oact
+    def set_value(self, opath=None, value=None):
         """ setting value of object or object element
         params:
-            opath: str  -> object element path string (Ex: 'a:b[0]')
-            value: json -> value to be set
+            opath: PrepObj
+            value: obj -> value to be set
         return: -
         """
-        if opath:
-            value=convert_to_json(value)
-        else:
-            # also check if value is list or dict
-            value=convert_to_json(value, True)
-        obj,idx_or_key=self._prepare_obj_for_action(opath) 
-        if opath:
-            obj[idx_or_key]=value
-            self.build_completion_list()
-        else:
-            self.obj=value
+        for p in opath:
+            if p.key and p.parent:
+                p.parent[p.key]=value
+            else:
+                p.value=value
 
     def append_value(self, opath="", value=None):
         """ append value to list in object
@@ -116,7 +134,7 @@ class ObjAction(cmd2.Cmd):
         """
         value=convert_to_json(value)
         if type(self._get_object_ref(opath)) != list:
-            raise TypeError("object path is not a list. only appending to lists ist possible!")
+            raise TypeError("object path is not a list. only appending to lists is possible!")
         obj,idx_or_key=self._prepare_obj_for_action(opath)
         if opath:
             obj[idx_or_key].append(value)

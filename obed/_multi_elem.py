@@ -18,8 +18,8 @@ start_obj={
     "d": {"a1": 3}
 }
 
-search_str="*"
-splt_search_list=search_str.split('|')
+search_str="*:[5]"
+splt_search_list=search_str.split(':')
 
 def prep_obj(obj=start_obj):
     po=PrepObj(value=obj)
@@ -57,16 +57,16 @@ def _rec_prep_obj(obj_list, cnt=0, res_list=None):
                 if expr in obj.value:
                     # if last eexpression 
                     if cnt == len(splt_search_list)-1:
-                        res_list.append(PrepObj(value=value, key=expr, parent=obj.value))
+                        res_list.append(PrepObj(value=obj.value[expr], key=expr, parent=obj.value))
                     else:
-                        r.append(PrepObj(val=obj.value[expr]))
+                        r.append(PrepObj(value=obj.value[expr]))
             elif isinstance(obj.value, list):
                 idx=None
                 try:
                     idx=int(re.match(r"\[(\d+)\]", expr).group(1))
                     value=obj.value[idx]
-                except (AttributeError,IndexError,ValueError):
-                    print("idx error")
+                except (AttributeError,IndexError,ValueError) as _exc:
+                    print(f"idx error, but its ok: {_exc}" )
                 except Exception as _exc:
                     print("unknown idx error")
                 else: 
@@ -76,7 +76,7 @@ def _rec_prep_obj(obj_list, cnt=0, res_list=None):
                     else:
                         r.append(PrepObj(value=value))
             else:
-                print("i don't now what to do")
+                print("found something that are not list or dict")
     #print(f"cnt={cnt} r={r}")
     if cnt < len(splt_search_list)-1:
         _rec_prep_obj(r, cnt+1, res_list)

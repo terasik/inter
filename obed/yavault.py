@@ -116,7 +116,7 @@ class YamlVault:
             else:
                 self._vault_id=vault_id
                 return dec_data
-        raise VaultError("decryption with all possible secrets failed")
+        raise VaultError("vault decryption with all possible secrets failed")
 
     def encode(self, plain_text):
         """ encode plain text
