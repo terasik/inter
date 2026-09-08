@@ -1,5 +1,4 @@
 """
-modul for handling json,yaml objects
 - editing objects (delete,append,set values to elements)
 - build completion list for object elements
 """
@@ -51,7 +50,7 @@ class ObjAction(cmd2.Cmd):
         """
         if not opath:
             return self.obj
-        po=prep_obj(self.obj, opath)
+        po=prep_obj(self, opath)
         return [p.value for p in po]
 
   
@@ -123,25 +122,36 @@ class ObjAction(cmd2.Cmd):
         return: -
         """
         for p in opath:
-            if p.key and p.parent:
+            if p.key !='' and p.parent:
                 p.parent[p.key]=value
             else:
-                p.value=value
-
+                p.value=value 
+    @oact
     def append_value(self, opath="", value=None):
         """ append value to list in object
         described by opath
         """
-        value=convert_to_json(value)
-        if type(self._get_object_ref(opath)) != list:
-            raise TypeError("object path is not a list. only appending to lists is possible!")
-        obj,idx_or_key=self._prepare_obj_for_action(opath)
-        if opath:
-            obj[idx_or_key].append(value)
-        else:
-            self.obj.append(value)
-        self.build_completion_list()
+        for p in opath:
+            if isinstance(p.value, list):
+                p.parent[p.key].append(value)
+            else:
+                self.pwarning(f"object described by key '{p.key}' is not a list. appending values is only possible to lists")
+                
 
+#    def append_value(self, opath="", value=None):
+#        """ append value to list in object
+#        described by opath
+#        """
+#        value=convert_to_json(value)
+#        if type(self._get_object_ref(opath)) != list:
+#            raise TypeError("object path is not a list. only appending to lists is possible!")
+#        obj,idx_or_key=self._prepare_obj_for_action(opath)
+#        if opath:
+#            obj[idx_or_key].append(value)
+#        else:
+#            self.obj.append(value)
+#        self.build_completion_list()
+#
     def delete_element(self, opath=""):
         """ delete object element
         described by opath

@@ -1,7 +1,6 @@
 # test multiselecting objects with '*'
 __all__ = ["prep_obj", "completion_build"]
 import re
-import pprint
 from collections import namedtuple
 from functools import wraps
 from inspect import signature, isfunction, Signature, BoundArguments
@@ -11,20 +10,6 @@ from obed.utils import convert_to_json
 
 PrepObj=namedtuple('PrepObj', 'value, key, parent', defaults=("",{}))
 
-test_obj={
-    "a": { 
-        "a1": 1,
-        "a2": 3 
-        },
-    "b": { "a1": 2 },
-    "b1": [10, 20, [30, {"g": 40}]],
-    "c": "b",
-    "e": { "e1": {"a1": 4}, "e2": 2},
-    "d": {"a1": 3}
-}
-
-test_path="*[0]"
-#splt_search_list=search_str.split(':')
 
 def _par_args_value(value, sign):
     if "vault_id" in sign.parameters:
@@ -46,7 +31,7 @@ def _par_args_vault_id(vault_id):
 
 def _par_args_opath(opath, bind):
     obed_inst=bind.arguments.get("self")
-    po=prep_obj(obed_inst.obj, opath)
+    po=prep_obj(obed_inst, opath)
     if not po:
         obed_inst.warn(f"no elements found for path '{opath}'")
     return po
@@ -82,24 +67,25 @@ def oact(f):
     return inner
     #return decor
 
-def prep_obj(obj, path):
-    po=PrepObj(value=obj, parent=obj)
+def prep_obj(obed_inst, path):
+    po=PrepObj(value=obed_inst.obj, parent=obed_inst.obj)
     if not path:
         return [po]
     prep_path=_prep_path(path)
-    print(f"---- prep_path: {prep_path}")
+    #print(f"---- prep_path: {prep_path}")
     prep_path=[p for p in prep_path.split('|') if p]
-    return _rec_prep_obj([po], prep_path)
+    return _rec_prep_obj([po], prep_path, obed_inst)
 
-def _rec_prep_obj(obj_list, prep_path, cnt=0, res_list=None):
+
+def _rec_prep_obj(obj_list, prep_path, obed_inst, cnt=0, res_list=None):
     expr=prep_path[cnt]
     r=[]
     if res_list is None:
         res_list=[]
-    print(f"cnt={cnt}")
-    print(f"cnt={cnt} obj_list={obj_list}")
+    #print(f"cnt={cnt}")
+    #print(f"cnt={cnt} obj_list={obj_list}")
     for obj in obj_list:
-        print(f"obj={obj}, expr={expr}")
+        #print(f"obj={obj}, expr={expr}")
         if expr=="*" or expr=="[*]":
             # TODO: what to do with other types?
             if isinstance(obj.value, dict):
@@ -115,10 +101,10 @@ def _rec_prep_obj(obj_list, prep_path, cnt=0, res_list=None):
                     if cnt == len(prep_path)-1:
                         res_list.append(PrepObj(value=value, key=key, parent=obj.value))
                     else:
-                        r.append(PrepObj(value=value))
+                        r.append(PrepObj(value=value, key=key, parent=obj.value))
             else:
-                print("* but what now?") 
-                pass
+                #print("* but what now?") 
+                obed_inst.perror(f"found neither list nor dict by recursive object walk at key '{expr}'")
         else:
             # TODO: what to do with other types?
             if isinstance(obj.value, dict):
@@ -129,20 +115,27 @@ def _rec_prep_obj(obj_list, prep_path, cnt=0, res_list=None):
                     else:
                         r.append(PrepObj(value=obj.value[expr]))
                 else:
-                    print(f"key '{expr}' does not exist")
-                    # check next key
-                    # create PrepObj depending on type of next key 
+                    #po=_handle_nonexistent_ele(PrepObj(value=_get_nonexistent_value(prep_path, cnt), key=expr, parent=obj.value), prep_path, cnt)
+                    if cnt == len(prep_path)-1:
+                        obed_inst.pwarning(f"key '{expr}' does not exist. creating..")
+                        po=PrepObj(value=None, key=expr, parent=obj.value)
+                        #print(f"created new po: {po}")
+                        res_list.append(po)
+                    else:
+                        #r.append(po) 
+                        #print(f"can't create new key '{expr}', becauce of obj depth>1")
+                        obed_inst.perror(f"can't create new key '{expr}' of path '{':'.join(prep_path)}'")
             elif isinstance(obj.value, list):
                 idx=None
                 try:
                     idx=int(re.match(r"\[(\d+)\]", expr).group(1))
                     value=obj.value[idx]
                 except (AttributeError,IndexError,ValueError) as _exc:
-                    print(f"idx error, but its ok: {_exc}" )
-                    pass
+                    #print(f"idx error, but its ok: {_exc}" )
+                    obed_inst.perror(f"some index error at key '{expr}'")
                 except Exception as _exc:
-                    print("unknown idx error")
-                    pass
+                    #print("unknown idx error")
+                    obed_inst.perror(f"unknown index error at key'{expr}': {_exc}")
                 else: 
                     # if last expression 
                     if cnt == len(prep_path)-1:
@@ -150,10 +143,11 @@ def _rec_prep_obj(obj_list, prep_path, cnt=0, res_list=None):
                     else:
                         r.append(PrepObj(value=value))
             else:
-                print("found something that are not list or dict")
-                pass
+                #print("found something that are not list or dict")
+                obed_inst.perror(f"found neither list nor dict by recursive object walk at key '{expr}'")
     if cnt < len(prep_path)-1:
-        _rec_prep_obj(r, prep_path, cnt+1, res_list)
+        _rec_prep_obj(r, prep_path, obed_inst, cnt+1, res_list)
+    #print(f">res_list: {res_list}")
     return res_list
 
 
@@ -210,10 +204,3 @@ def completion_build(o, s="", l=None):
         pass
     return l
 
-if __name__ == '__main__':
-    print("test path: ", test_path)
-    print("test obj : ")
-    pprint.pprint(test_obj)
-    po=prep_obj(test_obj, test_path)
-    print("result   : ")
-    pprint.pprint(po)
