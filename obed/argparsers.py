@@ -103,7 +103,7 @@ class ObedArgParsers:
                                 help='take value from another object element', 
                                 choices_provider=object_choice_provider)
     set_vault_parser.add_argument('-i', '--vault-id', 
-                                nargs='*', 
+                                nargs=1, 
                                 help='value will be encrypted with vault id', 
                                 choices_provider=vault_choice_provider)
 
@@ -137,7 +137,7 @@ class ObedArgParsers:
                                   help='take append values from another elements', 
                                   choices_provider=object_choice_provider)
     append_vault_parser.add_argument('-i', '--vault-id', 
-                                    nargs='*', 
+                                    nargs=1, 
                                     help='value will be encrypted with vault id', 
                                     choices_provider=vault_choice_provider)
 
@@ -183,11 +183,15 @@ class ObedArgParsers:
                           help='print vault ids and passwords',
                           nargs='*',
                           choices_provider=vault_choice_provider)
+    vault_group.add_argument('-d', '--delete',
+                          help='delete vault id(s)',
+                          nargs='+',
+                          choices_provider=vault_choice_provider)
     vault_group.add_argument('-r', '--read',
                           help='read vault ids and passwds from stdin',
                           action='store_true')
     vault_group.add_argument('-l', '--load-file',
-                          help='read vault ids aand passwds from file. file format: vault-id=password',
+                          help='read vault ids and passwds from file. file format: vault-id=password',
                           nargs=1,
                           completer=cmd2.Cmd.path_complete)
 

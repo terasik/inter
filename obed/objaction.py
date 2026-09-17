@@ -53,28 +53,16 @@ class ObjAction(cmd2.Cmd):
         po=prep_obj(self, opath)
         return [p.value for p in po]
 
-  
-#    def _get_object_ref(self, opath=""):
-#        """ return reference to object or object element 
-#        params:
-#            opath: str  -> object element path string (Ex: 'a:b[0]')
-#        return:
-#            obj: json   -> reference to object or obj element
-#        """
-#        r=self._prepare_obj_for_action(opath, True)
-#        return r[0]
-
-
+    @oact
     def set_value_vault(self, opath, value, vault_id):
         """ setting value as vault value
         """
-        if not isinstance(value, (YamlVault)):
-            if not vault_id:
-                raise ValueError("vault_id not provided") 
-            value=YamlVault(plain_text=value, vault_id=vault_id[0])
-        obj,idx_or_key=self._prepare_obj_for_action(opath) 
-        obj[idx_or_key]=value
-        self.build_completion_list()
+        value=YamlVault(plain_text=value, vault_id=vault_id)
+        for p in opath:
+            if p.key !='':
+                p.parent[p.key]=value
+            else:
+                self.obj=value
 
     def append_value_vault(self, opath, value, vault_id):
         """ appending vault values to list
@@ -91,28 +79,7 @@ class ObjAction(cmd2.Cmd):
         else:
             self.obj.append(value)
         self.build_completion_list()
-          
 
-#    def set_value(self, opath ="", value=None):
-#        """ setting value of object or object element
-#        params:
-#            opath: str  -> object element path string (Ex: 'a:b[0]')
-#            value: obj -> value to be set
-#        return: -
-#        """
-#        #if opath:
-#        #    value=convert_to_json(value)
-#        #else:
-#            # also check if value is list or dict
-#        value=convert_to_json(value)
-#        po=prep_obj(self.obj, opath)
-#        if opath:
-#            for p in po:
-#                p.parent[p.key]=value
-#            #self.build_completion_list()
-#        else:
-#            self.obj=value
-#        self.compl_list=completion_build(self.obj)
     @oact
     def set_value(self, opath=None, value=None):
         """ setting value of object or object element
@@ -122,51 +89,39 @@ class ObjAction(cmd2.Cmd):
         return: -
         """
         for p in opath:
-            if p.key !='' and p.parent:
+            if p.key !='':
                 p.parent[p.key]=value
             else:
-                p.value=value 
+                self.obj=value
+
     @oact
     def append_value(self, opath="", value=None):
         """ append value to list in object
         described by opath
         """
         for p in opath:
-            if isinstance(p.value, list):
-                p.parent[p.key].append(value)
+            if p.key!='':
+                if isinstance(p.value, list):
+                    p.parent[p.key].append(value)
+                else:
+                    self.pwarning(f"object described by key '{p.key}' is not a list. appending values is only possible to lists")
             else:
-                self.pwarning(f"object described by key '{p.key}' is not a list. appending values is only possible to lists")
-                
+                if isinstance(self.obj, list):
+                    self.obj.append(value)
+                else:
+                    self.perror(f"object is not a list. appending values is only possible to lists")
 
-#    def append_value(self, opath="", value=None):
-#        """ append value to list in object
-#        described by opath
-#        """
-#        value=convert_to_json(value)
-#        if type(self._get_object_ref(opath)) != list:
-#            raise TypeError("object path is not a list. only appending to lists is possible!")
-#        obj,idx_or_key=self._prepare_obj_for_action(opath)
-#        if opath:
-#            obj[idx_or_key].append(value)
-#        else:
-#            self.obj.append(value)
-#        self.build_completion_list()
-#
+    @oact
     def delete_element(self, opath=""):
         """ delete object element
         described by opath
         """
-        if opath:
-            try:
-                self._get_object_ref(opath)
-            except (KeyError,IndexError) as exc:
-                raise ValueError("element path %s doesn't exist. exception: %s" % (opath, exc))
-        obj,idx_or_key=self._prepare_obj_for_action(opath)
-        if opath:
-            del obj[idx_or_key]
-            self.build_completion_list()
-        else:
-            self.obj={}
+        for p in opath:
+            if p.key!='':
+                del p.parent[p.key]
+            else:
+                self.pwarning(f"setting whole object to empty dict")
+                self.obj={}
 
     def _rec_compl_build(self, o, s="", l=None):
         """

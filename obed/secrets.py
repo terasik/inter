@@ -83,6 +83,15 @@ class ObedVault():
                 p=""
             self.vault_data.update({vid: p})
 
+    def vault_data_delete(self, args):
+        """ delete vault_id's
+        """
+        for vid in args.vault_ids:
+            if vid in self.vault_data:
+                del self.vault_data[vid]
+            else:
+                self.perror("vault_id '%s' doesn't exist" % vid)
+
 
     def vault_data_read(self, args):
         """ read passwords from stdin
@@ -155,6 +164,8 @@ class ObedVault():
             self.vault_data_read(args)
         elif args.load_file:
             self.vault_data_load_file(args)
+        elif args.delete:
+            self.vault_data_delete(args)
         else:
             for vid in args.vault_ids:
                 self.check_and_set_vault_data(vid, False)

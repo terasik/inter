@@ -31,10 +31,10 @@ def _par_args_vault_id(vault_id):
 
 def _par_args_opath(opath, bind):
     obed_inst=bind.arguments.get("self")
-    po=prep_obj(obed_inst, opath)
-    if not po:
+    po_list=prep_obj(obed_inst, opath)
+    if not po_list:
         obed_inst.warn(f"no elements found for path '{opath}'")
-    return po
+    return po_list
     
 def _par_args(sign: Signature, bind: BoundArguments) -> list:
     args=[]
@@ -68,8 +68,10 @@ def oact(f):
     #return decor
 
 def prep_obj(obed_inst, path):
+    #print(id(obed_inst), id(obed_inst.obj))
     po=PrepObj(value=obed_inst.obj, parent=obed_inst.obj)
     if not path:
+        #print("no path")
         return [po]
     prep_path=_prep_path(path)
     #print(f"---- prep_path: {prep_path}")
