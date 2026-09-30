@@ -64,21 +64,22 @@ class ObjAction(cmd2.Cmd):
             else:
                 self.obj=value
 
+    @oact
     def append_value_vault(self, opath, value, vault_id):
         """ appending vault values to list
         """
-        if not isinstance(value, (YamlVault)):
-            if not vault_id:
-                raise ValueError("vault_id not provided") 
-            value=YamlVault(plain_text=value, vault_id=vault_id[0])
-        if type(self._get_object_ref(opath)) != list:
-            raise TypeError("object path is not a list. only appending to lists ist possible!")
-        obj,idx_or_key=self._prepare_obj_for_action(opath)
-        if opath:
-            obj[idx_or_key].append(value)
-        else:
-            self.obj.append(value)
-        self.build_completion_list()
+        value=YamlVault(plain_text=value, vault_id=vault_id)
+        for p in opath:
+            if p.key!='':
+                if isinstance(p.value, list):
+                    p.parent[p.key].append(value)
+                else:
+                    self.pwarning(f"object described by key '{p.key}' is not a list. appending values is only possible to lists")
+            else:
+                if isinstance(self.obj, list):
+                    self.obj.append(value)
+                else:
+                    self.perror(f"object is not a list. appending values is only possible to lists")
 
     @oact
     def set_value(self, opath=None, value=None):

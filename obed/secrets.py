@@ -26,13 +26,25 @@ class VaultData:
 class ObedVault():
     """ vault password """
   
-    def vault_data_print(self, vault_ids=[]):
+    #def vault_data_print(self, vault_ids=[]):
+    #   """ print vault ids
+    #    if no vault_ids provided print 
+    #    everything
+    #    """
+    #    if vault_ids:
+    #        for vid in vault_ids:
+    #            self.poutput("vault_id=%s, password=%s" % (vid, self.vault_data[vid]))
+    #    else:
+    #        for vid,pwd in self.vault_data.items():
+    #            self.poutput("vault_id=%s, password=%s" % (vid,pwd))
+
+    def vault_data_print(self, args):
         """ print vault ids
         if no vault_ids provided print 
         everything
         """
-        if vault_ids:
-            for vid in vault_ids:
+        if args.vault_ids:
+            for vid in args.vault_ids:
                 self.poutput("vault_id=%s, password=%s" % (vid, self.vault_data[vid]))
         else:
             for vid,pwd in self.vault_data.items():
@@ -88,7 +100,9 @@ class ObedVault():
         """
         for vid in args.vault_ids:
             if vid in self.vault_data:
+                print(f"delete vid {vid}")
                 del self.vault_data[vid]
+                #del VaultData.vault_data[vid]
             else:
                 self.perror("vault_id '%s' doesn't exist" % vid)
 
@@ -128,47 +142,42 @@ class ObedVault():
         ...
         vault_id_N = password_N
         """
-        #self.poutput("loading vault data file")
         with open(args.load_file[0]) as f:
             lines=f.readlines()
         for cnt,line in enumerate(lines):
             line=line.strip()
             # empty line
             if not line:
-                #self.poutput("  line %s -> empty" % cnt)
                 continue
             #  comments
             if re.search(r'^\s*[#;]', line):
-                #self.poutput("  line %s -> comment" % cnt)
                 continue
-            #r=re.match('^\s*(?P<vault_id>'+vault_id_rgx+')\s*=?\s*(?P<passwd>[^\s"\']+)?')
-            r=re.match(rf'^\s*(?P<vault_id>{re.escape(vault_id_rgx)})\s*(=\s*(?P<passwd>[^\s"\']+))?\s*$', line)
+            r=re.match(rf'^\s*(?P<vault_id>{vault_id_rgx})\s*=\s*(?P<passwd>[^\s"\']+)\s*$', line)
             if r:
                 vid=r.group("vault_id")
                 passwd=r.group("passwd")
                 #self.poutput(" line %s -> ok vid=%s password=%s" % (cnt, vid, passwd))
-                if vid in self.vault_data:
-                    self.pwarning("overwrite vault id %s" % vid) 
+                if vid in self.vault_data and self.vault_data[vid]!=passwd:
+                    self.pwarning("overwriting vault id %s" % vid) 
                 self.vault_data.update({vid: passwd})
             else:
                 self.pwarning("ignoring line %s (%s)" %(cnt,line))
 
 
-    def handle_vault_ids_args(self, args):
+    def handle_vault_args(self, args):
         """ get vault ids from args (argpraser)
         if -r option is provided read password from stdin
         if -l option provided load file
         if no of both options, set only vault_ids
         """
-        if args.read:
-            self.vault_data_read(args)
-        elif args.load_file:
-            self.vault_data_load_file(args)
-        elif args.delete:
-            self.vault_data_delete(args)
+        for action in ["read", "load_file", "delete", "print"]:
+            if getattr(args, action, None):
+                getattr(self, f"vault_data_{action}")(args)
+                break
         else:
             for vid in args.vault_ids:
                 self.check_and_set_vault_data(vid, False)
+        
 
     
 

@@ -15,6 +15,7 @@ import os
 from time import sleep
 from copy import deepcopy
 from importlib.metadata import version
+import json
 import yaml
 import cmd2
 from obed.objaction import ObjAction
@@ -26,9 +27,13 @@ from obed.yavault import VaultData, get_loader
 
 
 if version("cmd2").startswith("2"):
-        CMD2_NEW=False
+    CMD2_NEW=False
 else:
-        CMD2_NEW=True
+    from rich.style import Style
+    from rich.text import Text
+    BLUE_STYLE=Style(color="bright_blue")
+    CMD2_NEW=True
+
 
 
 class Obed(ObjAction, ObedArgParsers, ObedVault):
@@ -124,15 +129,20 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
             obj=load_json(args.file[0])
             self.psuccess("loaded file as json")
             self.obj_type="json"
-        except:
+        except json.JSONDecodeError as jexc:
+            self.pwarning(f"json loader failed with error: {jexc}. trying yaml loader")
             try:
                 obj=load_yaml(args.file[0])
                 if not isinstance(obj, (dict,list)):
                     raise TypeError("yaml loaded object is not instance of list or dict")
                 self.obj_type="yaml"
                 self.psuccess("loaded file as yaml")
-            except:
+            except yaml.YAMLError as yexc:
+                self.perror(f"yaml loader failed with error: {yexc}")
                 raise TypeError("neither json nor yaml loaders has worked to open file: %s" % args.file[0])
+        except Exception as oexc:
+            self.perror(f"error while opening file: {oexc}")
+            raise  
         self.wrk_file=args.file[0]
         self.obj=obj
   
@@ -198,20 +208,17 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
                                -1 -> last change
                                -2 -> last-1 change
         """
-        if args:
-            for c in args:
-                if CMD2_NEW:
-                    self.poutput(f"hist Nr. {c} ->")
-                else:
-                    self.poutput(cmd2.ansi.style("hist Nr. %s -> "%c, fg=cmd2.Fg["LIGHT_BLUE"] ))
-                self.poutput("%s" % obj_dumps(self.obj_hist[int(c)], self.obj_type))
-        else: 
-            for c,e in enumerate(self.obj_hist):
-                if CMD2_NEW:
-                    self.poutput(f"hist Nr. {c} ->")
-                else:
-                    self.poutput(cmd2.ansi.style("hist Nr. %s -> "%c, fg=cmd2.Fg["LIGHT_BLUE"] ))
-                self.poutput("%s" % obj_dumps(e, self.obj_type))
+        hist_iter=args if args else list(range(len(self.obj_hist)))
+        for c in hist_iter:
+            if CMD2_NEW:
+                self.poutput(Text(f"hist Nr. {c} ->", style=BLUE_STYLE))
+            else:
+                self.poutput(cmd2.ansi.style("hist Nr. %s -> "%c, fg=cmd2.Fg["LIGHT_BLUE"] ))
+            try:
+                _c=int(c)
+                self.poutput("%s" % obj_dumps(self.obj_hist[_c], self.obj_type))
+            except (ValueError, IndexError) as e:
+                self.pwarning(f"argument '{c}' is out of range or can't be converted to int. argument will be skipped")
 
     def complete_showhist(self, text, line, begidx, endidx):
         """ completion for print 
@@ -297,12 +304,13 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         else:
             for e in args:
                 if CMD2_NEW:
-                    self.poutput(f"{e} ->")
+                    #self.poutput(f"{e} ->")
+                    self.poutput(Text(f"{e} ->", style=BLUE_STYLE))
                 else:
                     self.poutput(cmd2.ansi.style("%s -> "%e, fg=cmd2.Fg["LIGHT_BLUE"] ))
                 res=self.get_value(e)
                 for r in res:
-                    self.poutput("--> %s" % obj_dumps(r, self.obj_type))
+                    self.poutput("%s" % obj_dumps(r, self.obj_type))
 
     def complete_print(self, text, line, begidx, endidx):
         """ completion for print """
@@ -316,13 +324,9 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         usage:
             delete path [path ..]  - delete one or more object elements described by path
         """
-        if not args.elements:
-            self.pwarning("deleting whole object..")
-            self.delete_element()
-        else:
-            for e in args.elements:
-                #self.poutput("deleting element %s" % e)
-                self.delete_element(e)
+        del_iter=args.elements if args.elements else [""]
+        for e in del_iter:
+            self.delete_element(e)
         self.changed=True
   
     @cmd2.with_argparser(ObedArgParsers.delete_parser)
@@ -335,11 +339,9 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
     def _set_val(self, args):
         """ set value of object element """
         value=self.get_args_value(args)
-        if args.elements:
-            for ele in args.elements:
-                self.set_value(ele,value)
-        else:
-            self.set_value("", value)
+        set_iter=args.elements if args.elements else [""]
+        for ele in set_iter:
+            self.set_value(ele,value)
         self.changed=True
 
     @cmd2.with_argparser(ObedArgParsers.set_parser)
@@ -377,13 +379,10 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
     def _append(self, args):
         """ append value of object element """
         values=self.get_args_values(args)
-        if args.elements:
-            for ele in args.elements:
-                for value in values:
-                    self.append_value(ele, value)
-        else:
+        append_iter=args.elements if args.elements else [""]
+        for ele in append_iter:
             for value in values:
-                self.append_value("", value)
+                self.append_value(ele, value)
         self.changed=True
   
     @cmd2.with_argparser(ObedArgParsers.append_parser)
@@ -399,13 +398,10 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         """ append vault value of object element """
         #values=args.value
         values=self.get_args_values(args)
-        if args.elements:
-            for ele in args.elements:
-                for value in values:
-                    self.append_value_vault(ele, value, args.vault_id)
-        else:
+        append_iter=args.elements if args.elements else [""]
+        for ele in append_iter:
             for value in values:
-                self.append_value_vault("", value, args.vault_id)
+                self.append_value_vault(ele, value, args.vault_id)
         self.obj_type="yaml"
         self.changed=True
   
@@ -422,9 +418,9 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         """ handling of vault data
         """
         #self.poutput("vault args: %s" % (args))
-        self.handle_vault_ids_args(args)
-        if args.print is not None:
-            self.vault_data_print(args.print)
+        self.handle_vault_args(args)
+        #if args.print is not None:
+        #    self.vault_data_print(args.print)
 
 
     ################### compl test #######################

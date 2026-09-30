@@ -17,6 +17,7 @@ def _par_args_value(value, sign):
     return convert_to_json(value)
 
 def _par_args_vault_id(vault_id):
+    #print(f"_par_args vault_id : {vault_id}")
     if vault_id is None and len(VaDa.vault_data)==1:
         return list(VaDa.vault_data.keys())[0]
     if vault_id is None and len(VaDa.vault_data)==0:
