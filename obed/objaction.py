@@ -53,33 +53,55 @@ class ObjAction(cmd2.Cmd):
         po=prep_obj(self, opath)
         return [p.value for p in po]
 
+    def _set_value(self, po_list, value):
+        changed=[False]
+        for p in po_list:
+            if p.key !='':
+                try:
+                    changed.append(True) if p.parent[p.key]!=value else changed.append(False)
+                except (KeyError, IndexError):
+                    changed.append(True)
+                except Exception as exc:
+                    self.perror(f"unknown error by setting value '{value}' for key '{p.key}': {exc}")
+                p.parent[p.key]=value
+            else:
+                changed.append(True) if self.obj!=value else changed.append(False)
+                self.obj=value
+        return changed
+
+    def _append_value(self, po_list, value):
+        changed=[False]
+        for p in opath:
+            if p.key!='':
+                if isinstance(p.value, list):
+                    p.parent[p.key].append(value)
+                    changed.append(True)
+                else:
+                    self.pwarning(f"object described by key '{p.key}' is not a list. appending values is only possible to lists")
+            else:
+                if isinstance(self.obj, list):
+                    self.obj.append(value)
+                    changed.append(True)
+                else:
+                    self.perror(f"object is not a list. appending values is only possible to lists")
+        return changed
+
+
     @oact
     def set_value_vault(self, opath, value, vault_id):
         """ setting value as vault value
         """
         value=YamlVault(plain_text=value, vault_id=vault_id)
-        for p in opath:
-            if p.key !='':
-                p.parent[p.key]=value
-            else:
-                self.obj=value
+        changed=self._set_value(opath, value)
+        return any(changed)
 
     @oact
     def append_value_vault(self, opath, value, vault_id):
         """ appending vault values to list
         """
         value=YamlVault(plain_text=value, vault_id=vault_id)
-        for p in opath:
-            if p.key!='':
-                if isinstance(p.value, list):
-                    p.parent[p.key].append(value)
-                else:
-                    self.pwarning(f"object described by key '{p.key}' is not a list. appending values is only possible to lists")
-            else:
-                if isinstance(self.obj, list):
-                    self.obj.append(value)
-                else:
-                    self.perror(f"object is not a list. appending values is only possible to lists")
+        changed=self._append_value(opath, value, vault_id)
+        return changed
 
     @oact
     def set_value(self, opath=None, value=None):
@@ -89,40 +111,31 @@ class ObjAction(cmd2.Cmd):
             value: obj -> value to be set
         return: -
         """
-        for p in opath:
-            if p.key !='':
-                p.parent[p.key]=value
-            else:
-                self.obj=value
+        changed=self._set_value(opath, value)
+        return changed
 
     @oact
     def append_value(self, opath="", value=None):
         """ append value to list in object
         described by opath
         """
-        for p in opath:
-            if p.key!='':
-                if isinstance(p.value, list):
-                    p.parent[p.key].append(value)
-                else:
-                    self.pwarning(f"object described by key '{p.key}' is not a list. appending values is only possible to lists")
-            else:
-                if isinstance(self.obj, list):
-                    self.obj.append(value)
-                else:
-                    self.perror(f"object is not a list. appending values is only possible to lists")
+        changed=self._append_value(opath, value, vault_id)
+        return changed
 
     @oact
     def delete_element(self, opath=""):
         """ delete object element
         described by opath
         """
+        changed=[False]
         for p in opath:
             if p.key!='':
                 del p.parent[p.key]
+                changed.append(True)
             else:
                 self.pwarning(f"setting whole object to empty dict")
                 self.obj={}
+                changed.append(True)
 
     def _rec_compl_build(self, o, s="", l=None):
         """

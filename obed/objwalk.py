@@ -11,15 +11,16 @@ from obed.utils import convert_to_json
 PrepObj=namedtuple('PrepObj', 'value, key, parent', defaults=("",{}))
 
 
-def _par_args_value(value, sign):
+def _par_args_value(value, **kwargs):
+    sign=kwargs.get('sign')
     if "vault_id" in sign.parameters:
         return value
     return convert_to_json(value)
 
-def _par_args_vault_id(vault_id):
+def _par_args_vault_id(vault_id, **kwargs):
     #print(f"_par_args vault_id : {vault_id}")
     if vault_id is None and len(VaDa.vault_data)==1:
-        return list(VaDa.vault_data.keys())[0]
+        vault_id=list(VaDa.vault_data.keys())[0]
     if vault_id is None and len(VaDa.vault_data)==0:
         raise ValueError("no vault-id's was defined/provided. see 'vault' command")
     if vault_id is None and len(VaDa.vault_data)>1:
@@ -28,9 +29,15 @@ def _par_args_vault_id(vault_id):
         raise ValueError("vault_id is empty or not provided")
     if vault_id not in VaDa.vault_data:
         raise ValueError(f"unknown vault-id '{vault_id}'. this vault-id's was defined: {list(VaDa.vault_data.keys())}")
+    bind=kwargs.get('bind')
+    obed_inst=bind.arguments.get("self")
+    if obed_inst.obj_type!="yaml":
+        obed_inst.pwarning("vault's can be used only with yaml objects. changing object type from {self.obj_type} to yaml")
+        obed_inst.obj_type="yaml"
     return vault_id
 
-def _par_args_opath(opath, bind):
+def _par_args_opath(opath, **kwargs):
+    bind=kwargs.get('bind')
     obed_inst=bind.arguments.get("self")
     po_list=prep_obj(obed_inst, opath)
     if not po_list:
@@ -43,12 +50,7 @@ def _par_args(sign: Signature, bind: BoundArguments) -> list:
         par_args_func=f"_par_args_{par}"
         arg_val=bind.arguments.get(par)
         if par_args_func in globals() and isfunction(globals()[par_args_func]):
-            if par=="value":
-                arg_val=globals()[par_args_func](arg_val, sign)
-            elif par=="opath":
-                arg_val=globals()[par_args_func](arg_val, bind)
-            else:
-                arg_val=globals()[par_args_func](arg_val)
+            arg_val=globals()[par_args_func](arg_val, sign=sign, bind=bind)
         args.append(arg_val)
     return args
 
@@ -60,11 +62,18 @@ def oact(f):
         bind=sign.bind(*args)
         obed_inst=bind.arguments.get("self")
         if not obed_inst.readonly:
-            obed_inst.obj_hist.append(deepcopy(obed_inst.obj))
-            r=f(*_par_args(sign, bind))
+            #obed_inst.obj_hist.append(deepcopy(obed_inst.obj))
+            obj_copy=deepcopy(obed_inst.obj)
+            changed=f(*_par_args(sign, bind))
             #if change:
-            obed_inst.build_completion_list()
-        return r
+            ch_ele_cnt=changed.count(True)
+            if ch_ele_cnt:
+                obed_inst.psuccess(f"{ch_ele_cnt} element(s) changed")
+                obed_inst.obj_hist.append(obj_copy)
+                obed_inst.build_completion_list()
+            else:
+                obed_inst.poutput(f"no elements changed")
+        return changed
     return inner
     #return decor
 

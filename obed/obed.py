@@ -63,14 +63,6 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         self.changed=False
         self.obj_type=None  
     
-#  def hist_choice_provider(self):
-#    """ showhist choice provider
-#    used for tab completion
-#    return numbers of object history array
-#    """
-#    l=len(self.obj_hist)
-#    return [str(x) for x in range(l)]
-
     def object_choice_provider(self):
         """ returns elements path of object
         """
@@ -336,7 +328,7 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
     
     ###################### set_val ########################
     @open_at_first
-    def _set_val(self, args):
+    def _setval(self, args):
         """ set value of object element """
         value=self.get_args_value(args)
         set_iter=args.elements if args.elements else [""]
@@ -352,18 +344,21 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
             setval -h                             - show help for setval command
         """
         #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
-        self._set_val(args)
+        self._setval(args)
   
 
     ###################### set_vault_val ########################
     @open_at_first
-    def _set_val_vault(self, args):
+    def _setval_vault(self, args):
         """ set value of object element """
         value=self.get_args_value(args)
         #value=args.value[0]
         for ele in args.elements:
             self.set_value_vault(ele,value,args.vault_id)
-        self.obj_type="yaml"
+        #if self.obj_type != "yaml":
+        #    self.pwarning("vault's can be used only with yaml objects. changing object type from {self.obj_type} to yaml")
+        #    self.obj_type="yaml"
+        # was it really changed ?
         self.changed=True
 
     @cmd2.with_argparser(ObedArgParsers.set_vault_parser)
@@ -371,7 +366,7 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         """ set value of object element as vault
         """
         #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
-        self._set_val_vault(args)
+        self._setval_vault(args)
 
 
     ###################### append to list ########################
@@ -402,7 +397,10 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         for ele in append_iter:
             for value in values:
                 self.append_value_vault(ele, value, args.vault_id)
-        self.obj_type="yaml"
+        #if self.obj_type != "yaml":
+        #    self.pwarning("vault's can be used only with yaml objects. changing object type from {self.obj_type} to yaml")
+        #    self.obj_type="yaml"
+        # was it really changed ?
         self.changed=True
   
     @cmd2.with_argparser(ObedArgParsers.append_vault_parser)
