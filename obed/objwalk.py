@@ -73,7 +73,7 @@ def oact(f):
                 obed_inst.build_completion_list()
             else:
                 obed_inst.poutput(f"no elements changed")
-        return changed
+        return any(changed)
     return inner
     #return decor
 

@@ -3,6 +3,45 @@ import cmd2
 from obed.secrets import vault_id_rgx
 from obed.defs import DEF_PASSWD_LEN, MAX_PASSWD_LEN
 
+class ValArgParser(cmd2.Cmd2ArgumentParser):
+    def __init__(self, obj_choices_provider, vault_choices_provider=None, need_mut_exc_gr=True):
+        super().__init__()
+        self.obj_choices_provider=obj_choices_provider
+        self.vault_choices_provider=vault_choices_provider
+        # TODO handling for delete parser
+        if need_mut_exc_gr:
+            self.mut_exc_group=self.add_mutually_exclusive_group(required=True) 
+        #self.add_gen_value_arg()
+        
+    def add_elements_arg(self, choices_provider=None):
+        if choices_provider is None:
+            choices_provider=self.obj_choices_provider
+        self.add_argument('elements', 
+                            help='object element(s)',
+                            nargs='*',
+                            choices_provider=choices_provider)
+
+    def add_value_arg(self, nargs=1, help_s="new value(s) of object element(s)"):
+        self.mut_exc_group.add_argument('-v', '--value', 
+                        nargs=nargs,
+                        help=help_s)
+    
+    def add_take_from_arg(self, nargs=1, 
+                            help_s="value(s) of existing elements used for new values",
+                            choices_provider=None):
+        if choices_provider is None:
+            choices_provider=self.obj_choices_provider
+        self.mut_exc_group.add_argument('-t', '--take-from', 
+                            help=help_s,
+                            nargs=nargs,
+                            choices_provider=choices_provider)
+
+    def add_vault_id_arg(self):
+        self.add_argument('-i', '--vault-id', 
+                            help='vault id used to encrypt values', 
+                            choices_provider=self.vault_choices_provider)
+
+
 class ObedArgParsers:
     """ argparsers for a lot of obed cmds:
     """
@@ -13,7 +52,7 @@ class ObedArgParsers:
             return args.value[idx]
         if args.take_from:
             return self.get_value(args.take_from[idx])
-        self.perror("something wrong with your command args...")
+        self.perror("something wrong with your command args...", vault_choice_provide)
 
     def get_args_values(self, args):
         """ get value from argparser args """
@@ -54,26 +93,14 @@ class ObedArgParsers:
         return self.delimiter_complete(text, line, begidx, endidx, match_against=self.compl_list, delimiter=":")
 
     # setval cmd parser
-    set_parser=cmd2.Cmd2ArgumentParser()
-    set_group=set_parser.add_mutually_exclusive_group(required=True)
-    set_parser.add_argument('elements', 
-                          help='object element(s) which will be set', 
-                          nargs='*', 
-                          choices_provider=object_choice_provider)
-    set_group.add_argument('-v', '--value', 
-                          nargs=1, 
-                          help='value of object element')
-    set_group.add_argument('-t', '--take-from', 
-                          nargs=1, 
-                          help='take value from another object element', 
-                          choices_provider=object_choice_provider)
+    setval_parser=ValArgParser(object_choice_provider)
+    setval_parser.add_elements_arg()
+    setval_parser.add_value_arg()
+    setval_parser.add_take_from_arg()
 
     # delete cmd parser
-    delete_parser=cmd2.Cmd2ArgumentParser()
-    delete_parser.add_argument('elements', 
-                            help='object element(s) which will be deleted', 
-                            nargs='*', 
-                            completer=my_delimiter_completer)
+    delete_parser=ValArgParser(object_choice_provider, None, False)
+    delete_parser.add_elements_arg()
 
     # new cmd parser
     new_parser=cmd2.Cmd2ArgumentParser()
@@ -89,57 +116,25 @@ class ObedArgParsers:
                           action='store_true')
 
     # setval_vault cmd parser
-    set_vault_parser=cmd2.Cmd2ArgumentParser()
-    set_vault_group=set_vault_parser.add_mutually_exclusive_group(required=True)
-    set_vault_parser.add_argument('elements', 
-                                help='object element(s) which will be set', 
-                                nargs='+', 
-                                choices_provider=object_choice_provider)
-    set_vault_group.add_argument('-v', '--value', 
-                                nargs=1, 
-                                help='value of object element')
-    set_vault_group.add_argument('-t', '--take-from', 
-                                nargs=1, 
-                                help='take value from another object element', 
-                                choices_provider=object_choice_provider)
-    set_vault_parser.add_argument('-i', '--vault-id', 
-                                #nargs=1, 
-                                help='value will be encrypted with vault id', 
-                                choices_provider=vault_choice_provider)
+    setval_vault_parser=ValArgParser(object_choice_provider, vault_choice_provider)
+    setval_vault_parser.add_elements_arg()
+    setval_vault_parser.add_value_arg()
+    setval_vault_parser.add_take_from_arg()
+    setval_vault_parser.add_vault_id_arg()
+    
 
     # append cmd parser
-    append_parser=cmd2.Cmd2ArgumentParser()
-    append_parser.add_argument('elements', 
-                              help='object element(s). element should be list', 
-                              nargs='*', 
-                              choices_provider=object_choice_provider)
-    append_group=append_parser.add_mutually_exclusive_group(required=True)
-    append_group.add_argument('-v', '--value', 
-                            nargs='+', 
-                            help='append this value to object lists')
-    append_group.add_argument('-t', '--take-from', 
-                            nargs='+', 
-                            help='take append values from another elements', 
-                            choices_provider=object_choice_provider)
+    append_parser=ValArgParser(object_choice_provider)
+    append_parser.add_elements_arg(object_choice_provider)
+    append_parser.add_value_arg('+')
+    append_parser.add_take_from_arg('+')
 
     # append_vault cmd parser
-    append_vault_parser=cmd2.Cmd2ArgumentParser()
-    append_vault_group=append_vault_parser.add_mutually_exclusive_group(required=True)
-    append_vault_parser.add_argument('elements', 
-                                    help='object element(s). element should be list', 
-                                    nargs='*', 
-                                    choices_provider=object_choice_provider)
-    append_vault_group.add_argument('-v', '--value', 
-                                  nargs='+', 
-                                  help='append this value to object lists')
-    append_vault_group.add_argument('-t', '--take-from', 
-                                  nargs='+', 
-                                  help='take append values from another elements', 
-                                  choices_provider=object_choice_provider)
-    append_vault_parser.add_argument('-i', '--vault-id', 
-                                    #nargs=1, 
-                                    help='value will be encrypted with vault id', 
-                                    choices_provider=vault_choice_provider)
+    append_vault_parser=ValArgParser(object_choice_provider, vault_choice_provider)
+    append_vault_parser.add_elements_arg(object_choice_provider)
+    append_vault_parser.add_value_arg('+')
+    append_vault_parser.add_take_from_arg('+')
+    append_vault_parser.add_vault_id_arg()
 
 
     # close parser

@@ -71,7 +71,7 @@ class ObjAction(cmd2.Cmd):
 
     def _append_value(self, po_list, value):
         changed=[False]
-        for p in opath:
+        for p in po_list:
             if p.key!='':
                 if isinstance(p.value, list):
                     p.parent[p.key].append(value)
@@ -93,18 +93,18 @@ class ObjAction(cmd2.Cmd):
         """
         value=YamlVault(plain_text=value, vault_id=vault_id)
         changed=self._set_value(opath, value)
-        return any(changed)
+        return changed
 
     @oact
     def append_value_vault(self, opath, value, vault_id):
         """ appending vault values to list
         """
         value=YamlVault(plain_text=value, vault_id=vault_id)
-        changed=self._append_value(opath, value, vault_id)
+        changed=self._append_value(opath, value)
         return changed
 
     @oact
-    def set_value(self, opath=None, value=None):
+    def set_value(self, opath, value):
         """ setting value of object or object element
         params:
             opath: PrepObj
@@ -115,11 +115,11 @@ class ObjAction(cmd2.Cmd):
         return changed
 
     @oact
-    def append_value(self, opath="", value=None):
+    def append_value(self, opath, value):
         """ append value to list in object
         described by opath
         """
-        changed=self._append_value(opath, value, vault_id)
+        changed=self._append_value(opath, value)
         return changed
 
     @oact
@@ -136,6 +136,7 @@ class ObjAction(cmd2.Cmd):
                 self.pwarning(f"setting whole object to empty dict")
                 self.obj={}
                 changed.append(True)
+        return changed
 
     def _rec_compl_build(self, o, s="", l=None):
         """
