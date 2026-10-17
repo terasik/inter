@@ -183,7 +183,7 @@ def handle_tty(action):
                     exception message='exc'")
     else:
         try:
-            print("restoring tty config..")
+            #print("restoring tty config..")
             with open(stty_config_file, "r") as fr:
                 subprocess.run(["stty", f"{fr.read().strip()}"],
                           timeout=5,

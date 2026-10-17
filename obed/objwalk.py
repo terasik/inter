@@ -68,11 +68,11 @@ def oact(f):
             #if change:
             ch_ele_cnt=changed.count(True)
             if ch_ele_cnt:
-                obed_inst.psuccess(f"{ch_ele_cnt} element(s) changed")
+                #obed_inst.psuccess(f"{ch_ele_cnt} element(s) changed")
                 obed_inst.obj_hist.append(obj_copy)
                 obed_inst.build_completion_list()
-            else:
-                obed_inst.poutput(f"no elements changed")
+            #else:
+            #    obed_inst.poutput(f"no elements changed")
         return any(changed)
     return inner
     #return decor

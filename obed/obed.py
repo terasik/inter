@@ -377,7 +377,9 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         values=self.get_args_values(args)
         append_iter=args.elements if args.elements else [""]
         for ele in append_iter:
+            #print("append values: ",values)
             for value in values:
+                #print("append value: ", value)
                 changed.append(self.append_value(ele, value))
         self.changed=any(changed)
   

@@ -2,16 +2,18 @@ import functools
 import cmd2
 from obed.secrets import vault_id_rgx
 from obed.defs import DEF_PASSWD_LEN, MAX_PASSWD_LEN
+from obed.utils import gen_secrets
 
 class ValArgParser(cmd2.Cmd2ArgumentParser):
-    def __init__(self, obj_choices_provider, vault_choices_provider=None, need_mut_exc_gr=True):
+    def __init__(self, obj_choices_provider, vault_choices_provider=None, need_val=True):
         super().__init__()
         self.obj_choices_provider=obj_choices_provider
         self.vault_choices_provider=vault_choices_provider
         # TODO handling for delete parser
-        if need_mut_exc_gr:
+        if need_val:
             self.mut_exc_group=self.add_mutually_exclusive_group(required=True) 
-        #self.add_gen_value_arg()
+            self.sec_group=self.add_argument_group()
+            self.add_sec_arg()
         
     def add_elements_arg(self, choices_provider=None):
         if choices_provider is None:
@@ -41,6 +43,20 @@ class ValArgParser(cmd2.Cmd2ArgumentParser):
                             help='vault id used to encrypt values', 
                             choices_provider=self.vault_choices_provider)
 
+    def add_sec_arg(self):
+        self.mut_exc_group.add_argument('-g', '--gensec',
+                                    help='generate new secret values',
+                                    action='store_true')                        
+        self.add_argument('-l', '--length',
+                            help="length of password",
+                            type=int,
+                            default=DEF_PASSWD_LEN,
+                            choices=range(1, MAX_PASSWD_LEN))
+        self.add_argument('-c', '--count',
+                              help="count of generated secrets",
+                              type=int,
+                              default=1)
+
 
 class ObedArgParsers:
     """ argparsers for a lot of obed cmds:
@@ -51,7 +67,9 @@ class ObedArgParsers:
         if args.value:
             return args.value[idx]
         if args.take_from:
-            return self.get_value(args.take_from[idx])
+            return self.get_value(args.take_from[idx])[0]
+        if args.gensec:
+            return gen_secrets(**vars(args))[0]
         self.perror("something wrong with your command args...", vault_choice_provide)
 
     def get_args_values(self, args):
@@ -59,7 +77,9 @@ class ObedArgParsers:
         if args.value:
             return args.value
         if args.take_from:
-            return [self.get_value(x) for x in args.take_from]
+            return [self.get_value(x)[0] for x in args.take_from]
+        if args.gensec:
+            return gen_secrets(**vars(args))
         self.perror("something wrong with your command args...")
 
     def get_args_values_len(self, args):
