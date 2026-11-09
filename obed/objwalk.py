@@ -8,17 +8,25 @@ from copy import deepcopy
 from obed.yavault import VaultData as VaDa
 from obed.utils import convert_to_json
 
+# PrepObj used to describe elements of object. 
+# PrepObj will be used for better handling of commands like setval, append
+# and object path's described by '*' 
 PrepObj=namedtuple('PrepObj', 'value, key, parent', defaults=("",{}))
 
 
 def _par_args_value(value, **kwargs):
+    """ handling value in oact decorator
+    for actions like setval*, append*
+    """
     sign=kwargs.get('sign')
     if "vault_id" in sign.parameters:
         return value
     return convert_to_json(value)
 
 def _par_args_vault_id(vault_id, **kwargs):
-    #print(f"_par_args vault_id : {vault_id}")
+    """ handling vault-id in oact decorator
+    for vault action like setval_, append_vault
+    """
     if vault_id is None and len(VaDa.vault_data)==1:
         vault_id=list(VaDa.vault_data.keys())[0]
     if vault_id is None and len(VaDa.vault_data)==0:
@@ -37,6 +45,9 @@ def _par_args_vault_id(vault_id, **kwargs):
     return vault_id
 
 def _par_args_opath(opath, **kwargs):
+    """ convert opath astring argument to 
+    prep object list in oact decorator
+    """
     bind=kwargs.get('bind')
     obed_inst=bind.arguments.get("self")
     po_list=prep_obj(obed_inst, opath)
@@ -45,6 +56,10 @@ def _par_args_opath(opath, **kwargs):
     return po_list
     
 def _par_args(sign: Signature, bind: BoundArguments) -> list:
+    """ handling arguments in oact decorator
+    if _par_args_<argument_name> function exist, this 
+    will be used to handle argument values
+    """
     args=[]
     for par,val in sign.parameters.items():
         par_args_func=f"_par_args_{par}"
@@ -55,51 +70,47 @@ def _par_args(sign: Signature, bind: BoundArguments) -> list:
     return args
 
 def oact(f):
-    #def decor(f):
+    """ will be used as decorator for commands like setval, append,
+        for handling funtions argument
+            opath -> convert to prepared object list
+            vault_id -> check provided vault_id's
+            value -> converting to object
+    """
     @wraps(f)
     def inner(*args):
         sign=signature(f)
         bind=sign.bind(*args)
         obed_inst=bind.arguments.get("self")
         if not obed_inst.readonly:
-            #obed_inst.obj_hist.append(deepcopy(obed_inst.obj))
             obj_copy=deepcopy(obed_inst.obj)
             changed=f(*_par_args(sign, bind))
-            #if change:
             ch_ele_cnt=changed.count(True)
             if ch_ele_cnt:
-                #obed_inst.psuccess(f"{ch_ele_cnt} element(s) changed")
                 obed_inst.obj_hist.append(obj_copy)
                 obed_inst.build_completion_list()
-            #else:
-            #    obed_inst.poutput(f"no elements changed")
         return any(changed)
     return inner
-    #return decor
 
 def prep_obj(obed_inst, path):
-    #print(id(obed_inst), id(obed_inst.obj))
+    """ convert path string to prep object list
+    """
     po=PrepObj(value=obed_inst.obj, parent=obed_inst.obj)
     if not path:
-        #print("no path")
         return [po]
     prep_path=_prep_path(path)
-    #print(f"---- prep_path: {prep_path}")
     prep_path=[p for p in prep_path.split('|') if p]
     return _rec_prep_obj([po], prep_path, obed_inst)
 
 
 def _rec_prep_obj(obj_list, prep_path, obed_inst, cnt=0, res_list=None):
+    """ recursive build prep object list
+    """
     expr=prep_path[cnt]
     r=[]
     if res_list is None:
         res_list=[]
-    #print(f"cnt={cnt}")
-    #print(f"cnt={cnt} obj_list={obj_list}")
     for obj in obj_list:
-        #print(f"obj={obj}, expr={expr}")
         if expr=="*" or expr=="[*]":
-            # TODO: what to do with other types?
             if isinstance(obj.value, dict):
                 for key,value in obj.value.items():
                     # if last eexpression 
@@ -115,10 +126,8 @@ def _rec_prep_obj(obj_list, prep_path, obed_inst, cnt=0, res_list=None):
                     else:
                         r.append(PrepObj(value=value, key=key, parent=obj.value))
             else:
-                #print("* but what now?") 
                 obed_inst.perror(f"found neither list nor dict by recursive object walk at key '{expr}'")
         else:
-            # TODO: what to do with other types?
             if isinstance(obj.value, dict):
                 if expr in obj.value:
                     # if last eexpression 
@@ -127,15 +136,11 @@ def _rec_prep_obj(obj_list, prep_path, obed_inst, cnt=0, res_list=None):
                     else:
                         r.append(PrepObj(value=obj.value[expr]))
                 else:
-                    #po=_handle_nonexistent_ele(PrepObj(value=_get_nonexistent_value(prep_path, cnt), key=expr, parent=obj.value), prep_path, cnt)
                     if cnt == len(prep_path)-1:
-                        obed_inst.pwarning(f"key '{expr}' does not exist. creating..")
+                        obed_inst.pwarning(f"key '{expr}' does not exist. trying to create or return null")
                         po=PrepObj(value=None, key=expr, parent=obj.value)
-                        #print(f"created new po: {po}")
                         res_list.append(po)
                     else:
-                        #r.append(po) 
-                        #print(f"can't create new key '{expr}', becauce of obj depth>1")
                         obed_inst.perror(f"can't create new key '{expr}' of path '{':'.join(prep_path)}'")
             elif isinstance(obj.value, list):
                 idx=None
@@ -143,10 +148,8 @@ def _rec_prep_obj(obj_list, prep_path, obed_inst, cnt=0, res_list=None):
                     idx=int(re.match(r"\[(\d+)\]", expr).group(1))
                     value=obj.value[idx]
                 except (AttributeError,IndexError,ValueError) as _exc:
-                    #print(f"idx error, but its ok: {_exc}" )
                     obed_inst.perror(f"some index error at key '{expr}'")
                 except Exception as _exc:
-                    #print("unknown idx error")
                     obed_inst.perror(f"unknown index error at key'{expr}': {_exc}")
                 else: 
                     # if last expression 
@@ -155,11 +158,9 @@ def _rec_prep_obj(obj_list, prep_path, obed_inst, cnt=0, res_list=None):
                     else:
                         r.append(PrepObj(value=value))
             else:
-                #print("found something that are not list or dict")
                 obed_inst.perror(f"found neither list nor dict by recursive object walk at key '{expr}'")
     if cnt < len(prep_path)-1:
         _rec_prep_obj(r, prep_path, obed_inst, cnt+1, res_list)
-    #print(f">res_list: {res_list}")
     return res_list
 
 
@@ -168,14 +169,9 @@ def _prep_path(opath=""):
     params: 
         opath: str -> path to object element (ex.: book[0]:id )
     return:
-        opath_search: str -> jmespath query string (ex.: "book"|[0]|"id")
+        opath: str -> jmespath query string (ex.: book|[0]|id)
     """
     opath=re.sub(r"(\[[\d+\*]\])|:", r"|\1", opath)
-    #opath_search="|".join([f'"{x}"' 
-    #                       if not x.startswith('[') and not x=="*" else x 
-    #                       for x in opath.split('|') if x])
-    
-    #print(f"---- opath_search: {opath_search}")
     return "|".join([x for x in opath.split('|') if x])
 
 def completion_build(o, s="", l=None):

@@ -4,7 +4,7 @@
 """
 import re
 from copy import deepcopy
-from collections import deque, namedtuple
+from collections import deque
 import cmd2
 import jmespath
 from obed.utils import convert_to_json
@@ -14,11 +14,7 @@ from obed.objwalk import prep_obj,completion_build, oact
 
 
 class ObjAction(cmd2.Cmd):
-    """ class to walk through (json,yaml) objects 
-    and 
-        - editing object elements
-        - build completion lists for existing elemets
-        - getting values ob object elements
+    """ set, append, get, delete values  
     """
     def __init__(self, obj=None):
         super().__init__()
@@ -46,7 +42,8 @@ class ObjAction(cmd2.Cmd):
         self.compl_list=completion_build(self.obj)
 
     def get_value(self, opath=""):
-        """ return value of element path (opath)
+        """ return value of object element
+            described by opath 
         """
         if not opath:
             return self.obj
@@ -54,6 +51,9 @@ class ObjAction(cmd2.Cmd):
         return [p.value for p in po]
 
     def _set_value(self, po_list, value):
+        """ setting value of object element(s)
+            in po_list (prepared object list)
+        """
         changed=[False]
         for p in po_list:
             if p.key !='':
@@ -70,6 +70,9 @@ class ObjAction(cmd2.Cmd):
         return changed
 
     def _append_value(self, po_list, value):
+        """ appending value to object element(s)
+            in po_list (prepared object list)
+        """
         changed=[False]
         for p in po_list:
             if p.key!='':
@@ -89,9 +92,14 @@ class ObjAction(cmd2.Cmd):
 
     @oact
     def set_value_vault(self, opath, value, vault_id):
-        """ setting value as vault value
+        """ setting vault value to object elements
+            described by opath
+
+            oact decor transform opath string to prepared
+            object list
+
         """
-        value=YamlVault(plain_text=value, vault_id=vault_id)
+        value=YamlVault(plain_text=value, vault_id=vault_id, vault_format_12=self.vault_format_12)
         changed=self._set_value(opath, value)
         return changed
 
@@ -99,7 +107,7 @@ class ObjAction(cmd2.Cmd):
     def append_value_vault(self, opath, value, vault_id):
         """ appending vault values to list
         """
-        value=YamlVault(plain_text=value, vault_id=vault_id)
+        value=YamlVault(plain_text=value, vault_id=vault_id, vault_format_12=self.vault_format_12)
         changed=self._append_value(opath, value)
         return changed
 
@@ -137,42 +145,4 @@ class ObjAction(cmd2.Cmd):
                 self.obj={}
                 changed.append(True)
         return changed
-
-    def _rec_compl_build(self, o, s="", l=None):
-        """
-        recursiv build of completion list. 
-        walk through object and check if lements are lists
-        or dicts. 
-        by dicts append ':' to dict key (ex.: book:id)
-        by lists append '[]' with index (ex.: [1][45])
-        by others go to next element. example:
-        object: { "book": {"id": 123, "authors": ["kira", "juraj]}}"}
-        complition list: ["book:", "book:id", "book:authors[0]", "book:authors[1]"]
-        """
-        if l is None:
-            l=[]
-        if type(o)==list:
-            if not o:
-                l.append(f"{s}")
-            for c,v in enumerate(o):
-                if type(v) == list:
-                    self._rec_compl_build(v,f"{s}[{c}]", l)
-                elif type(v) == dict:
-                    self._rec_compl_build(v,f"{s}[{c}]:", l)
-                else:
-                    l.append(f"{s}[{c}]")
-        elif type(o)==dict:
-            if not o:
-                l.append(f"{s}")
-            for k,v in o.items():
-                if type(v) == list:
-                    self._rec_compl_build(v,f"{s}{k}", l)
-                elif type(v) == dict:
-                    self._rec_compl_build(v,f"{s}{k}:", l)
-                else:
-                    l.append(f"{s}{k}")
-        else:
-            #self.pwarning("")
-            pass
-        return l
 

@@ -6,6 +6,7 @@ import yaml
 import logging
 #from ansible_vault import Vault
 from obed.ansivault import Vault
+from obed.defs import VAULT_FORMAT_12
 
 class VaultError(Exception):
     """ Vault Error """
@@ -30,6 +31,7 @@ class YamlVault:
         self.flsp=None
         self._cipher_text=None
         self._plain_text=None
+        self.format_12=kwargs.get("vault_format_12", VAULT_FORMAT_12)
         self.cipher_text=kwargs.get("cipher_text", None)
         if not self.cipher_text:
             self.vault_id=kwargs.get("vault_id", None)
@@ -51,7 +53,7 @@ class YamlVault:
         elif len(flsp)==4:
             self._vault_id=flsp[-1].strip()
         else:
-            raise VaultError(f"vault format ist falsch (erste zeile): {flsp}")
+            raise VaultError(f"wrong ansible vault format (first line): {flsp}")
 
     @property
     def vault_id(self):
@@ -97,7 +99,7 @@ class YamlVault:
         """
         if plain_text:
             if not self.vault_id:
-                raise VaultError("vault-id nicht übergeben")
+                raise VaultError("no vault-id provided")
             self._vault_id=self.vault_id
             self._cipher_text=self.encode(plain_text)
             self._plain_text=plain_text
@@ -122,7 +124,10 @@ class YamlVault:
         """ encode plain text
         - returns cipher text
         """
-        vault=Vault(self._passwd[self._vault_id])
+        if self.format_12:
+            vault=Vault(self._passwd[self._vault_id], vault_id=self._vault_id)
+        else:
+            vault=Vault(self._passwd[self._vault_id])
         return vault.dump_raw(plain_text)
 
 

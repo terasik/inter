@@ -1,3 +1,4 @@
+# cmd2 Argparsers for obed commands
 import functools
 import cmd2
 from obed.secrets import vault_id_rgx
@@ -5,17 +6,26 @@ from obed.defs import DEF_PASSWD_LEN, MAX_PASSWD_LEN
 from obed.utils import gen_secrets
 
 class ValArgParser(cmd2.Cmd2ArgumentParser):
+    """ Argument parser used for commands setval,append
+    and corresponding _vault commands
+    """  
     def __init__(self, obj_choices_provider, vault_choices_provider=None, need_val=True):
+        """ init ArgParser
+        arg: need_val - should be False for commands like 'delete'
+                where no new values will be created
+        """ 
         super().__init__()
         self.obj_choices_provider=obj_choices_provider
         self.vault_choices_provider=vault_choices_provider
-        # TODO handling for delete parser
         if need_val:
             self.mut_exc_group=self.add_mutually_exclusive_group(required=True) 
-            self.sec_group=self.add_argument_group()
             self.add_sec_arg()
         
     def add_elements_arg(self, choices_provider=None):
+        """ adding positional elements argument
+        arg: choices_provider - used for tabcompletion
+                if None self.obj_choices_provider will be used
+        """
         if choices_provider is None:
             choices_provider=self.obj_choices_provider
         self.add_argument('elements', 
@@ -24,6 +34,8 @@ class ValArgParser(cmd2.Cmd2ArgumentParser):
                             choices_provider=choices_provider)
 
     def add_value_arg(self, nargs=1, help_s="new value(s) of object element(s)"):
+        """ adding value argument  to mutual exclusive group 
+        """
         self.mut_exc_group.add_argument('-v', '--value', 
                         nargs=nargs,
                         help=help_s)
@@ -31,6 +43,8 @@ class ValArgParser(cmd2.Cmd2ArgumentParser):
     def add_take_from_arg(self, nargs=1, 
                             help_s="value(s) of existing elements used for new values",
                             choices_provider=None):
+        """ adding take from argument to mutual exclusive group 
+        """
         if choices_provider is None:
             choices_provider=self.obj_choices_provider
         self.mut_exc_group.add_argument('-t', '--take-from', 
@@ -39,11 +53,15 @@ class ValArgParser(cmd2.Cmd2ArgumentParser):
                             choices_provider=choices_provider)
 
     def add_vault_id_arg(self):
+        """ adding vault-id argument
+        """
         self.add_argument('-i', '--vault-id', 
                             help='vault id used to encrypt values', 
                             choices_provider=self.vault_choices_provider)
 
     def add_sec_arg(self):
+        """ adding generate secrets arg to mutual exclusive group
+        """
         self.mut_exc_group.add_argument('-g', '--gensec',
                                     help='generate new secret values',
                                     action='store_true')                        
@@ -63,32 +81,35 @@ class ObedArgParsers:
     """
 
     def get_args_value(self, args, idx=0):
-        """ get value from argparser args """
+        """ get value from argparser args 
+            will be used for setval* command(s)
+        """
+        # if -v option is set
         if args.value:
             return args.value[idx]
+        # if -t option is set
         if args.take_from:
             return self.get_value(args.take_from[idx])[0]
+        # if -g option is set
         if args.gensec:
             return gen_secrets(**vars(args))[0]
         self.perror("something wrong with your command args...", vault_choice_provide)
 
     def get_args_values(self, args):
-        """ get value from argparser args """
+        """ get values from argparser args 
+            will be used for append* command(s)
+        """
+        # if -v option is set
         if args.value:
             return args.value
+        # if -t option is set
         if args.take_from:
             return [self.get_value(x)[0] for x in args.take_from]
+        # if -g option is set
         if args.gensec:
             return gen_secrets(**vars(args))
         self.perror("something wrong with your command args...")
 
-    def get_args_values_len(self, args):
-        if args.value:
-            return len(args.value)
-        if args.take_from:
-            return len(args.take_from)
-        self.perror("something wrong with your command args...")
-      
     def object_choice_provider(self):
         """ return list with all obj elements
         """
@@ -141,7 +162,6 @@ class ObedArgParsers:
     setval_vault_parser.add_value_arg()
     setval_vault_parser.add_take_from_arg()
     setval_vault_parser.add_vault_id_arg()
-    
 
     # append cmd parser
     append_parser=ValArgParser(object_choice_provider)
@@ -156,7 +176,6 @@ class ObedArgParsers:
     append_vault_parser.add_take_from_arg('+')
     append_vault_parser.add_vault_id_arg()
 
-
     # close parser
     close_parser=cmd2.Cmd2ArgumentParser()
     close_group=close_parser.add_mutually_exclusive_group()
@@ -167,14 +186,12 @@ class ObedArgParsers:
                             help='dont save before closing', 
                             action='store_true')
 
-
     # open file parser
     open_parser=cmd2.Cmd2ArgumentParser()
     open_parser.add_argument('file',
                           help='file to load',
                           nargs=1,
                           completer=cmd2.Cmd.path_complete)
-
 
     # save parser
     save_parser=cmd2.Cmd2ArgumentParser()
@@ -185,7 +202,6 @@ class ObedArgParsers:
     save_parser.add_argument('-t', '--type',
                           help='type of saved object [json, yaml]',
                           choices=['json', 'yaml'])
-
 
     # vault parser
     vault_parser=cmd2.Cmd2ArgumentParser()
@@ -212,7 +228,6 @@ class ObedArgParsers:
                           help='read vault ids and passwds from file. file format: vault-id=password',
                           nargs=1,
                           completer=cmd2.Cmd.path_complete)
-
 
     # completion test parser
     compl_test_parser=cmd2.Cmd2ArgumentParser()

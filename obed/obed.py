@@ -24,15 +24,18 @@ from obed.argparsers import ObedArgParsers
 from obed.decors import *
 from obed.secrets import ObedVault
 from obed.yavault import VaultData, get_loader
+from obed.defs import VAULT_FORMAT_12
+from rich.style import Style
+from rich.text import Text
 
-
-if version("cmd2").startswith("2"):
-    CMD2_NEW=False
-else:
-    from rich.style import Style
-    from rich.text import Text
-    BLUE_STYLE=Style(color="bright_blue")
-    CMD2_NEW=True
+BLUE_STYLE=Style(color="bright_blue")
+CMD2_NEW=True
+try:
+    CMD2_VERS=int(version("cmd2").strip()[0])
+    if CMD2_VERS<=2:
+        CMD2_NEW=False
+except:
+    print("ERROR: can't detect version of cmd2 package. using rich stylerich styless")
 
 
 
@@ -51,8 +54,16 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         self.prompt="> "
         self.wrk_file=None
         self.changed=False
+        self.vault_format_12=VAULT_FORMAT_12
         self.vault_data=VaultData.vault_data
+        self._add_settables()
         self.obj_type=None
+
+    def _add_settables(self):
+        self.add_settable(
+            cmd2.Settable("vault_format_12", bool, "Using ansible vault format 1.2", self)
+        )
+
 
     def _reset(self):
         """ reset after closing object
@@ -463,9 +474,12 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         """
         hist_idx=args.hist_idx
         self.poutput("restoring obj from hist nr. %s" % hist_idx)
-        curr_obj=deepcopy(self.obj)
-        self.obj=deepcopy(self.obj_hist[hist_idx])
-        self.obj_hist.append(curr_obj)
+        try:
+            curr_obj=deepcopy(self.obj)
+            self.obj=deepcopy(self.obj_hist[hist_idx])
+            self.obj_hist.append(curr_obj)
+        except IndexError:
+            self.perror
         self.changed=True
 
     @cmd2.with_argparser(ObedArgParsers.restore_parser)
@@ -495,7 +509,7 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         """
         secs=gen_secrets(**vars(args))
         for c, v in enumerate(secs):
-            self.poutput("%s: %s" % (c, v))
+            self.poutput(v)
    
  
 def run():

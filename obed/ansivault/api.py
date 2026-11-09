@@ -24,13 +24,13 @@ from .parsing import AnsibleVaultLib
 class Vault(object):
     """R/W an ansible-vault yaml file"""
 
-    def __init__(self, password=None, vault_lib=None):
+    def __init__(self, password=None, vault_id=None, vault_lib=None):
         if not any([password, vault_lib]):
             raise ValueError("You should specify value to password or vault_lib.")
 
         if password:
             self.secret = password.encode("utf-8")
-            self.vault = AnsibleVaultLib(self.secret)
+            self.vault = AnsibleVaultLib(self.secret, vault_id)
         else:
             self.secret = None
             self.vault = vault_lib

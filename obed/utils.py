@@ -52,7 +52,7 @@ def convert_to_json(value, check_type=False, raise_error=False):
         raise TypeError("json is not dict or list")
     return js
 
-@expand_user
+@expand_user()
 def load_json(path):
     """ load json file
 
@@ -65,7 +65,7 @@ def load_json(path):
         js=json.load(f)
     return js
 
-@expand_user
+@expand_user()
 def load_yaml(path):
     """ load yaml file
 
@@ -100,7 +100,7 @@ def obj_dumps(obj, obj_type="json"):
         s=None
     return s
 
-@expand_user
+@expand_user()
 def dump_json(obj, path):
     """ write obj to path as json
     params:
@@ -111,7 +111,7 @@ def dump_json(obj, path):
     with open(path, 'w') as _fw:
         json.dump(obj, _fw, indent=2, ensure_ascii=False)
 
-@expand_user
+@expand_user()
 def dump_yaml(obj, path):
     """ write obj to path as json
     params:
