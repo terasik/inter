@@ -3,11 +3,13 @@ modul with helper functions
 - loading, dumping json objects
 - yaml vault dumpers
 - generating password
+- decorators
 """
-__all__=["convert_to_json", "load_json", "obj_dumps",
-         "load_yaml", "dump_json", "dump_yaml",
-         "gen_secrets", "handle_examples", "handle_tty",
-         "sigterm_handler"]
+__all__ = ["convert_to_json", "load_json", "obj_dumps",
+            "load_yaml", "dump_json", "dump_yaml",
+            "gen_secrets", "handle_examples", "handle_tty",
+            "sigterm_handler", "open_at_first", "close_at_first", 
+            "expand_user"]
 
 import os
 import re
@@ -16,12 +18,13 @@ import string
 import secrets
 import subprocess
 import platform
+from functools import wraps
+from inspect import signature
 from pathlib import Path
 from shutil import copy2
 from importlib_resources import files as example_files
 import yaml
 from obed.yavault import get_plain_dumper,get_cipher_dumper,get_loader
-from obed.decors import expand_user
 from obed.defs import DEF_PASSWD_LEN
 
 def convert_to_json(value, check_type=False, raise_error=False):
@@ -200,3 +203,60 @@ def sigterm_handler(signum, frame):
     print(f"handling SIGTERM (signum={signum} frame={frame})")
     handle_tty("restore")
 
+
+# decorators
+
+def open_at_first(f):
+    """ used to warn user, that new obejct
+    have to be created/opened
+    """
+    @wraps(f)
+    def inner(*args, **kwargs):
+        inst=args[0]
+        if inst.obj is not None:
+            return f(*args, **kwargs)
+        inst.warn("open/create new object at first")
+        return
+    return inner
+
+def close_at_first(f):
+    """ used to warn user, that current obejct 
+    have to be closed
+    """
+    @wraps(f)
+    def inner(*args, **kwargs):
+        inst=args[0]
+        if inst.obj is None:
+            return f(*args, **kwargs)
+        inst.warn("close your current object at first")
+        return
+    return inner
+
+def expand_user_s(f):
+    """ used to expand ~ in path strings
+        this shouldn't be used  
+    """
+    def inner(*args, **kwargs):
+        new_args=list(args)
+        try:
+            new_args[-1]=os.path.expanduser(args[-1])
+        except:
+            pass
+        return f(*new_args, **kwargs)
+    return inner
+
+def expand_user(path_arg="path"):
+    """ used to expand ~ in path strings 
+    """
+    def decor(f):
+        @wraps(f)
+        def inner(*args, **kwargs):
+            sign=signature(f)
+            bind=sign.bind(*args, **kwargs)
+            if path_arg in bind.arguments:
+                bind.arguments[path_arg]=os.path.expanduser(bind.arguments[path_arg])
+            if path_arg in bind.kwargs:
+                bind.arguments['kwargs'][path_arg]=os.path.expanduser(bind.arguments['kwargs'][path_arg])
+            return f(*bind.args, **bind.kwargs)
+        return inner
+    return decor

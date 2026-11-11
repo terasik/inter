@@ -210,17 +210,12 @@ class ObedArgParsers:
                           help='vault ids. should match this regex %s' % vault_id_rgx,
                           nargs='*',
                           choices_provider=vault_choice_provider)
-    #vault_parser.add_argument('-p', '--print',
     vault_group.add_argument('-p', '--print',
                           help='print vault ids and passwords',
-                          #nargs='*',
                           action='store_true')
-                          #choices_provider=vault_choice_provider)
     vault_group.add_argument('-d', '--delete',
                           help='delete vault id(s)',
-                          #nargs='+',
                           action='store_true') 
-                          #choices_provider=vault_choice_provider)
     vault_group.add_argument('-r', '--read',
                           help='read vault ids and passwds from stdin',
                           action='store_true')

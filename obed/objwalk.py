@@ -104,6 +104,7 @@ def prep_obj(obed_inst, path):
 
 def _rec_prep_obj(obj_list, prep_path, obed_inst, cnt=0, res_list=None):
     """ recursive build prep object list
+        
     """
     expr=prep_path[cnt]
     r=[]

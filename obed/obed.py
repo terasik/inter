@@ -21,7 +21,6 @@ import cmd2
 from obed.objaction import ObjAction
 from obed.utils import *
 from obed.argparsers import ObedArgParsers
-from obed.decors import *
 from obed.secrets import ObedVault
 from obed.yavault import VaultData, get_loader
 from obed.defs import VAULT_FORMAT_12
@@ -60,6 +59,9 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         self.obj_type=None
 
     def _add_settables(self):
+        """ add possibility to set ansible
+        vault format. default format is 1.1
+        """
         self.add_settable(
             cmd2.Settable("vault_format_12", bool, "Using ansible vault format 1.2", self)
         )
@@ -128,6 +130,9 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
     ############# open ##########################
     @close_at_first
     def _open(self, args):
+        """ load json or yaml file and save loaded object
+        to self.obj
+        """
         try:
             obj=load_json(args.file[0])
             self.psuccess("loaded file as json")
@@ -365,7 +370,6 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         """ set value of object element """
         value=self.get_args_value(args)
         changed=[]
-        #value=args.value[0]
         set_iter=args.elements if args.elements else [""]
         for ele in set_iter:
             changed.append(self.set_value_vault(ele,value,args.vault_id))
@@ -388,16 +392,13 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
         values=self.get_args_values(args)
         append_iter=args.elements if args.elements else [""]
         for ele in append_iter:
-            #print("append values: ",values)
             for value in values:
-                #print("append value: ", value)
                 changed.append(self.append_value(ele, value))
         self.changed=any(changed)
   
     @cmd2.with_argparser(ObedArgParsers.append_parser)
     def do_append(self, args):
         """ append value of object element """
-        #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
         self._append(args)
 
 
@@ -405,7 +406,6 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
     @open_at_first
     def _append_vault(self, args):
         """ append vault value of object element """
-        #values=args.value
         values=self.get_args_values(args)
         changed=[]
         append_iter=args.elements if args.elements else [""]
@@ -417,7 +417,6 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
     @cmd2.with_argparser(ObedArgParsers.append_vault_parser)
     def do_append_vault(self, args):
         """ append vault value of object element """
-        #self.poutput("setting %s to %s" % (args.elements, args.value[0]))
         self._append_vault(args)
 
 
@@ -426,10 +425,7 @@ class Obed(ObjAction, ObedArgParsers, ObedVault):
     def do_vault(self, args):
         """ handling of vault data
         """
-        #self.poutput("vault args: %s" % (args))
         self.handle_vault_args(args)
-        #if args.print is not None:
-        #    self.vault_data_print(args.print)
 
 
     ################### compl test #######################
